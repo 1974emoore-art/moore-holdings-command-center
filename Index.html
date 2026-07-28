@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Moore Holdings Credit Agent</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f3f5f7;
+      color: #202124;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      max-width: 1150px;
+      margin: 0 auto;
+    }
+
+    .header {
+      padding: 24px;
+      margin-bottom: 18px;
+      border-radius: 14px;
+      color: white;
+      background: linear-gradient(135deg, #14213d, #2457a7);
+      box-shadow: 0 5px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .header h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .header p {
+      margin: 0;
+      opacity: 0.9;
+    }
+
+    .status-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      border: 1px solid #d7e2f2;
+      border-radius: 10px;
+      background: white;
+    }
+
+    .status-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #f59e0b;
+    }
+
+    .status-dot.online {
+      background: #16a34a;
+    }
+
+    .status-dot.error {
+      background: #dc2626;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    button {
+      padding: 13px 19px;
+      border: 0;
+      border-radius: 9px;
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .refresh-button {
+      background: #374151;
+    }
+
+    .scan-button {
+      background: #1267d6;
+    }
+
+    .message {
+      display: none;
+      margin-bottom: 18px;
+      padding: 15px 17px;
+      border-radius: 9px;
+      line-height: 1.5;
+    }
+
+    .message.loading {
+      display: block;
+      border: 1px solid #bdd7ff;
+      color: #174ea6;
+      background: #eaf2ff;
+    }
+
+    .message.success {
+      display: block;
+      border: 1px solid #a7e2b8;
+      color: #146c2e;
+      background: #eaf8ee;
+    }
+
+    .message.error {
+      display: block;
+      border: 1px solid #efb0b0;
+      color: #a50e0e;
+      background: #fdecec;
+    }
+
+    .cards,
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 14px;
+    }
+
+    .cards {
+      margin-bottom: 18px;
+    }
+
+    .card,
+    .result-card {
+      padding: 18px;
+      border: 1px solid #e0e5eb;
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+    }
+
+    .card-label,
+    .result-label {
+      margin-bottom: 8px;
+      color: #687080;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .card-value,
+    .result-value {
+      color: #14213d;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .results,
+    .details-area {
+      display: none;
+    }
+
+    .results.show,
+    .details-area.show {
+      display: block;
+    }
+
+    .section-header {
+      margin-top: 18px;
+      padding: 17px 20px;
+      border-radius: 12px 12px 0 0;
+      color: white;
+      background: #14213d;
+    }
+
+    .section-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .results-grid {
+      padding: 18px;
+      border: 1px solid #e0e5eb;
+      border-top: 0;
+      border-radius: 0 0 12px 12px;
+      background: white;
+    }
+
+    details {
+      overflow: hidden;
+      margin-top: 14px;
+      border: 1px solid #dfe5ec;
+      border-radius: 11px;
+      background: white;
+    }
+
+    summary {
+      padding: 17px 19px;
+      color: #14213d;
+      background: #f7f9fb;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .count-badge {
+      display: inline-block;
+      min-width: 28px;
+      margin-left: 8px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: white;
+      background: #1267d6;
+      text-align: center;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      padding: 12px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 650px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #e4e8ee;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #344054;
+      background: #eef3f8;
+      font-size: 13px;
+    }
+
+    td {
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .account-name {
+      color: #14213d;
+      font-weight: bold;
+    }
+
+    .warning {
+      color: #9a3412;
+      font-weight: bold;
+    }
+
+    .high-confidence {
+      color: #b42318;
+      font-weight: bold;
+    }
+
+    .manual-review {
+      color: #b54708;
+      font-weight: bold;
+    }
+
+    .empty-result {
+      padding: 18px;
+      color: #667085;
+      text-align: center;
+    }
+
+    .safe-note {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-left: 5px solid #16a34a;
+      border-radius: 7px;
+      color: #245b35;
+      background: #ecf8ef;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 12px;
+      }
+
+      .header {
+        padding: 19px;
+      }
+
+      .header h1 {
+        font-size: 23px;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <section class="header">
+      <h1>Moore Holdings Credit Agent</h1>
+      <p>Personal and business credit monitoring dashboard</p>
+    </section>
+
+    <section class="status-bar">
+      <span id="statusDot" class="status-dot"></span>
+      <strong id="connectionStatus">Connecting to Airtable...</strong>
+      <span id="modeStatus">Read-only safety mode</span>
+    </section>
+
+    <div class="button-row">
+      <button
+        id="refreshButton"
+        class="refresh-button"
+        type="button"
+        onclick="refreshDashboard()"
+      >
+        Refresh Airtable Counts
+      </button>
+
+      <button
+        id="scanButton"
+        class="scan-button"
+        type="button"
+        onclick="runPersonalScan()"
+      >
+        Scan Personal Credit
+      </button>
+    </div>
+
+    <div id="message" class="message loading">
+      Loading the Moore Holdings credit system...
+    </div>
+
+    <section class="cards">
+      <div class="card">
+        <div class="card-label">Personal Credit Records</div>
+        <div id="personalCount" class="card-value">--</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Business Credit Records</div>
+        <div id="businessCount" class="card-value">--</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Connection</div>
+        <div id="connectionCard" class="card-value">Checking</div>
+      </div>
+    </section>
+
+    <section id="scanResults" class="results">
+      <div class="section-header">
+        <h2>Personal Credit Scan Results</h2>
+      </div>
+
+      <div class="results-grid">
+        <div class="result-card">
+          <div class="result-label">Records Scanned</div>
+          <div id="scannedCount" class="result-value">0</div>
+        </div>
+
+        <div class="result-card">
+          <div class="result-label">Missing Data Flags</div>
+          <div id="missingCount" class="result-value">0</div>
+        </div>
+
+        <div class="result-card">
+          <div class="result-label">Possible Duplicates</div>
+          <div id="duplicateCount" class="result-value">0</div>
+        </div>
+
+        <div class="result-card">
+          <div class="result-label">Bureau Inconsistencies</div>
+          <div id="bureauCount" class="result-value">0</div>
+        </div>
+
+        <div class="result-card">
+          <div class="result-label">Creditor-Role Flags</div>
+          <div id="creditorRoleCount" class="result-value">0</div>
+        </div>
+
+        <div class="result-card">
+          <div class="result-label">Total Flags</div>
+          <div id="totalFlagsCount" class="result-value">0</div>
+        </div>
+      </div>
+    </section>
+<section id="priorityArea" class="details-area" style="display: none;">
+  <div class="section-header">
+    <h2>Executive Priority Actions</h2>
+  </div>
+
+  <div id="priorityActionsList"></div>
+</section>
+    <section id="detailsArea" class="details-area">
+      <div class="section-header">
+        <h2>Flag Details and Review</h2>
+      </div>
+
+      <details open>
+        <summary>
+          Missing Data
+          <span id="missingBadge" class="count-badge">0</span>
+        </summary>
+
+        <div id="missingTable" class="table-wrap"></div>
+      </details>
+
+      <details>
+        <summary>
+          Possible Duplicates
+          <span id="duplicateBadge" class="count-badge">0</span>
+        </summary>
+
+        <div id="duplicateTable" class="table-wrap"></div>
+      </details>
+
+      <details>
+        <summary>
+          Bureau Inconsistencies
+          <span id="bureauBadge" class="count-badge">0</span>
+        </summary>
+
+        <div id="bureauTable" class="table-wrap"></div>
+      </details>
+
+      <details>
+        <summary>
+          Creditor-Role Issues
+          <span id="creditorRoleBadge" class="count-badge">0</span>
+        </summary>
+
+        <div id="creditorRoleTable" class="table-wrap"></div>
+      </details>
+    </section>
+
+    <div class="safe-note">
+      Read-only review mode is active. No Airtable records will be changed.
+    </div>
+  </div>
+
+  <script>
+    function escapeHtml(value) {
+      return String(value === undefined || value === null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function setMessage(text, type) {
+      const message = document.getElementById('message');
+      message.textContent = text;
+      message.className = 'message ' + type;
+    }
+
+    function setButtonsDisabled(disabled) {
+      document.getElementById('refreshButton').disabled = disabled;
+      document.getElementById('scanButton').disabled = disabled;
+    }
+
+    function setConnection(status, isOnline) {
+      document.getElementById('connectionStatus').textContent = status;
+      document.getElementById('connectionCard').textContent = status;
+
+      document.getElementById('statusDot').className =
+        isOnline ? 'status-dot online' : 'status-dot error';
+    }
+
+    function readCount(value, fallback) {
+      if (Array.isArray(value)) {
+        return value.length;
+      }
+
+      if (value !== undefined && value !== null && value !== '') {
+        const number = Number(value);
+
+        if (!Number.isNaN(number)) {
+          return number;
+        }
+      }
+
+      if (Array.isArray(fallback)) {
+        return fallback.length;
+      }
+
+      if (
+        fallback !== undefined &&
+        fallback !== null &&
+        fallback !== ''
+      ) {
+        const number = Number(fallback);
+
+        if (!Number.isNaN(number)) {
+          return number;
+        }
+      }
+
+      return 0;
+    }
+
+    function renderEmpty(containerId, message) {
+      document.getElementById(containerId).innerHTML =
+        '<div class="empty-result">' + escapeHtml(message) + '</div>';
+    }
+
+    function renderMissingData(items) {
+      const list = Array.isArray(items) ? items : [];
+      document.getElementById('missingBadge').textContent = list.length;
+
+      if (!list.length) {
+        renderEmpty('missingTable', 'No missing-data flags found.');
+        return;
+      }
+
+      let html =
+        '<table>' +
+        '<thead><tr>' +
+        '<th>Account Name</th>' +
+        '<th>Missing Fields</th>' +
+        '<th>Record ID</th>' +
+        '</tr></thead><tbody>';
+
+      list.forEach(function(item) {
+        const missingFields = Array.isArray(item.missingFields)
+          ? item.missingFields.join(', ')
+          : item.missingFields;
+
+        html +=
+          '<tr>' +
+          '<td class="account-name">' +
+          escapeHtml(item.accountName) +
+          '</td>' +
+          '<td class="warning">' +
+          escapeHtml(missingFields) +
+          '</td>' +
+          '<td>' +
+          escapeHtml(item.recordId) +
+          '</td>' +
+          '</tr>';
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('missingTable').innerHTML = html;
+    }
+
+    function renderDuplicates(items) {
+      const list = Array.isArray(items) ? items : [];
+      document.getElementById('duplicateBadge').textContent = list.length;
+
+      if (!list.length) {
+        renderEmpty('duplicateTable', 'No possible duplicates found.');
+        return;
+      }
+
+      let html =
+        '<table>' +
+        '<thead><tr>' +
+        '<th>Account A</th>' +
+        '<th>Account B</th>' +
+        '<th>Score</th>' +
+        '<th>Confidence</th>' +
+        '<th>Matching Reasons</th>' +
+        '</tr></thead><tbody>';
+
+      list.forEach(function(item) {
+        const reasons = Array.isArray(item.reasons)
+          ? item.reasons.join(', ')
+          : item.reasons;
+
+        const confidenceClass =
+          item.confidence === 'High-confidence possible duplicate'
+            ? 'high-confidence'
+            : 'manual-review';
+
+        html +=
+          '<tr>' +
+          '<td class="account-name">' +
+          escapeHtml(item.accountA) +
+          '</td>' +
+          '<td class="account-name">' +
+          escapeHtml(item.accountB) +
+          '</td>' +
+          '<td>' +
+          escapeHtml(item.score) +
+          '</td>' +
+          '<td class="' +
+          confidenceClass +
+          '">' +
+          escapeHtml(item.confidence) +
+          '</td>' +
+          '<td>' +
+          escapeHtml(reasons) +
+          '</td>' +
+          '</tr>';
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('duplicateTable').innerHTML = html;
+    }
+
+    function renderIssueTable(items, containerId, badgeId, emptyMessage) {
+      const list = Array.isArray(items) ? items : [];
+      document.getElementById(badgeId).textContent = list.length;
+
+      if (!list.length) {
+        renderEmpty(containerId, emptyMessage);
+        return;
+      }
+
+      let html =
+        '<table>' +
+        '<thead><tr>' +
+        '<th>Account Name</th>' +
+        '<th>Issue</th>' +
+        '<th>Record ID</th>' +
+        '</tr></thead><tbody>';
+
+      list.forEach(function(item) {
+        html +=
+          '<tr>' +
+          '<td class="account-name">' +
+          escapeHtml(item.accountName) +
+          '</td>' +
+          '<td class="warning">' +
+          escapeHtml(item.issue) +
+          '</td>' +
+          '<td>' +
+          escapeHtml(item.recordId) +
+          '</td>' +
+          '</tr>';
+      });
+
+      html += '</tbody></table>';
+      document.getElementById(containerId).innerHTML = html;
+    }
+
+    function refreshDashboard() {
+      setButtonsDisabled(true);
+      setMessage('Loading Airtable record counts...', 'loading');
+
+      google.script.run
+        .withSuccessHandler(function(data) {
+          document.getElementById('personalCount').textContent =
+            readCount(data.personalCount, data.personalCreditCount);
+
+          document.getElementById('businessCount').textContent =
+            readCount(data.businessCount, data.businessCreditCount);
+
+          const status =
+            data && data.connectionStatus
+              ? data.connectionStatus
+              : 'Online';
+
+          setConnection(status, true);
+
+          document.getElementById('modeStatus').textContent =
+            data && data.readOnly === false
+              ? 'Write mode'
+              : 'Read-only safety mode';
+
+          setMessage(
+            'Airtable counts loaded successfully.',
+            'success'
+          );
+
+          setButtonsDisabled(false);
+        })
+        .withFailureHandler(function(error) {
+          const details =
+            error && error.message
+              ? error.message
+              : String(error);
+
+          setConnection('Connection error', false);
+          setMessage('Dashboard error: ' + details, 'error');
+          setButtonsDisabled(false);
+        })
+        .getDashboardData();
+    }
+
+    function runPersonalScan() {
+      setButtonsDisabled(true);
+
+      setMessage(
+        'Scanning Personal Credit Repair records. No records will be changed...',
+        'loading'
+      );
+
+      google.script.run
+        .withSuccessHandler(function(data) {
+          const summary =
+            data && data.summary
+              ? data.summary
+              : {};
+
+          const missingData =
+            Array.isArray(data.missingData)
+              ? data.missingData
+              : [];
+
+          const possibleDuplicates =
+            Array.isArray(data.possibleDuplicates)
+              ? data.possibleDuplicates
+              : [];
+
+          const bureauIssues =
+            Array.isArray(data.bureauIssues)
+              ? data.bureauIssues
+              : [];
+
+          const creditorRoleIssues =
+            Array.isArray(data.creditorRoleIssues)
+              ? data.creditorRoleIssues
+              : [];
+
+          document.getElementById('scannedCount').textContent =
+            readCount(summary.recordCount, data.recordCount);
+
+          document.getElementById('missingCount').textContent =
+            readCount(summary.missingData, missingData);
+
+          document.getElementById('duplicateCount').textContent =
+            readCount(summary.possibleDuplicates, possibleDuplicates);
+
+          document.getElementById('bureauCount').textContent =
+            readCount(summary.bureauIssues, bureauIssues);
+
+          document.getElementById('creditorRoleCount').textContent =
+            readCount(summary.creditorRoleIssues, creditorRoleIssues);
+
+          document.getElementById('totalFlagsCount').textContent =
+            readCount(summary.totalFlags, data.totalFlags);
+
+          renderMissingData(missingData);
+          renderDuplicates(possibleDuplicates);
+
+          renderIssueTable(
+            bureauIssues,
+            'bureauTable',
+            'bureauBadge',
+            'No bureau inconsistencies found.'
+          );
+
+          renderIssueTable(
+            creditorRoleIssues,
+            'creditorRoleTable',
+            'creditorRoleBadge',
+            'No creditor-role issues found.'
+          );
+const priorityActions =
+  data && Array.isArray(data.priorityActions)
+    ? data.priorityActions
+    : [];
+
+renderPriorityActions(priorityActions);
+
+const priorityArea = document.getElementById('priorityArea');
+
+if (priorityArea) {
+  priorityArea.style.display =
+    priorityActions.length > 0 ? 'block' : 'none';
+}
+          document.getElementById('scanResults').classList.add('show');
+          document.getElementById('detailsArea').classList.add('show');
+
+          setMessage(
+            'Personal Credit scan completed successfully.',
+            'success'
+          );
+
+          setButtonsDisabled(false);
+        })
+        .withFailureHandler(function(error) {
+          const details =
+            error && error.message
+              ? error.message
+              : String(error);
+
+          setMessage('Scanner error: ' + details, 'error');
+          setButtonsDisabled(false);
+        })
+        .scanPersonalCredit();
+    }
+
+    function initializeDataQualityGate() {
+  if (document.getElementById('nonAccountTable')) {
+    return;
+  }
+
+  const creditorTable =
+    document.getElementById('creditorRoleTable');
+
+  if (!creditorTable) {
+    return;
+  }
+
+  const creditorSection =
+    creditorTable.closest('details');
+
+  if (!creditorSection) {
+    return;
+  }
+
+  const section = document.createElement('details');
+
+  section.innerHTML =
+    '<summary>' +
+      'Non-Account Candidates ' +
+      '<span id="nonAccountBadge" class="count-badge">0</span>' +
+    '</summary>' +
+    '<div id="nonAccountTable" class="table-wrap">' +
+      '<div class="empty-result">' +
+        'Run the Personal Credit scan to check for non-account records.' +
+      '</div>' +
+    '</div>';
+
+  creditorSection.insertAdjacentElement(
+    'afterend',
+    section
+  );
+
+  const scanButton =
+    document.getElementById('scanButton');
+
+  if (scanButton) {
+    scanButton.addEventListener(
+      'click',
+      refreshNonAccountCandidates
+    );
+  }
+}
+
+function refreshNonAccountCandidates() {
+  const container =
+    document.getElementById('nonAccountTable');
+
+  if (container) {
+    container.innerHTML =
+      '<div class="empty-result">' +
+        'Checking for non-account records...' +
+      '</div>';
+  }
+
+  google.script.run
+    .withSuccessHandler(renderNonAccountCandidates)
+    .withFailureHandler(function(error) {
+      const details =
+        error && error.message
+          ? error.message
+          : String(error);
+
+      if (container) {
+        container.innerHTML =
+          '<div class="empty-result">' +
+            'Data Quality Gate error: ' +
+            escapeHtml(details) +
+          '</div>';
+      }
+    })
+    .scanNonAccountCandidates();
+}
+
+function renderNonAccountCandidates(data) {
+  const candidates =
+    data && Array.isArray(data.candidates)
+      ? data.candidates
+      : [];
+
+  const badge =
+    document.getElementById('nonAccountBadge');
+
+  const container =
+    document.getElementById('nonAccountTable');
+
+  if (badge) {
+    badge.textContent = candidates.length;
+  }
+
+  if (!container) {
+    return;
+  }
+
+  if (candidates.length === 0) {
+    container.innerHTML =
+      '<div class="empty-result">' +
+        'No non-account candidates found.' +
+      '</div>';
+
+    return;
+  }
+
+  let html =
+    '<table>' +
+      '<thead>' +
+        '<tr>' +
+          '<th>Record Name</th>' +
+          '<th>Reason for Review</th>' +
+          '<th>Record ID</th>' +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>';
+
+  candidates.forEach(function(candidate) {
+    html +=
+      '<tr>' +
+        '<td>' +
+          escapeHtml(candidate.accountName) +
+        '</td>' +
+        '<td>' +
+          escapeHtml(candidate.reason) +
+        '</td>' +
+        '<td>' +
+          escapeHtml(candidate.recordId) +
+        '</td>' +
+      '</tr>';
+  });
+
+  html +=
+      '</tbody>' +
+    '</table>';
+
+  container.innerHTML = html;
+}
+    
+    window.addEventListener('load', refreshDashboard);
+    window.addEventListener('load', initializeDataQualityGate);
+
+    function renderPriorityActions(items) {
+  const container = document.getElementById('priorityActionsList');
+
+  if (!container) {
+    return;
+  }
+
+  const actions = Array.isArray(items) ? items : [];
+
+  if (!actions.length) {
+    container.innerHTML =
+      '<div class="empty-result">No priority actions were generated.</div>';
+    return;
+  }
+
+  let html = '';
+
+  actions.forEach(function(action) {
+    html +=
+      '<div class="card" style="margin-bottom: 16px;">' +
+        '<div style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">' +
+          'Priority #' +
+          escapeHtml(action.priority || '') +
+          ' — ' +
+          escapeHtml(action.accountName || 'Unknown account') +
+        '</div>' +
+        '<div style="margin-bottom: 6px;"><strong>Category:</strong> ' +
+          escapeHtml(action.category || '') +
+        '</div>' +
+        '<div style="margin-bottom: 6px;"><strong>Severity:</strong> ' +
+          escapeHtml(action.severity || '') +
+        '</div>' +
+        '<div style="margin-bottom: 6px;"><strong>Issue:</strong> ' +
+          escapeHtml(action.issue || '') +
+        '</div>' +
+        '<div style="margin-bottom: 6px;"><strong>Why it matters:</strong> ' +
+          escapeHtml(action.whyItMatters || '') +
+        '</div>' +
+        '<div style="margin-bottom: 6px;"><strong>Recommended action:</strong> ' +
+          escapeHtml(action.recommendedAction || '') +
+        '</div>' +
+        '<div style="margin-bottom: 6px;"><strong>Evidence:</strong> ' +
+escapeHtml(action.details || '') +
+'</div>' +
+'<div><strong>Confidence:</strong> ' +
+          escapeHtml(action.confidence || '') +
+        '</div>' +
+      '</div>';
+  });
+
+  container.innerHTML = html;
+}
+  </script>
+<!-- PHASE 10 — LETTER REVIEW PANEL -->
+<section id="phase10ReviewPanel" style="
+  margin: 24px auto;
+  padding: 20px;
+  max-width: 1100px;
+  background: #ffffff;
+  border: 2px solid #17365d;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+">
+  <div style="
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    flex-wrap:wrap;
+  ">
+    <div>
+      <h2 style="margin:0;color:#17365d;">
+        Phase 10 Letter Review
+      </h2>
+
+      <p style="margin:6px 0 0;color:#555;">
+        Review each draft and select Approve, Reject, or Hold.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      id="phase10RefreshButton"
+      onclick="loadPhase10ReviewQueue()"
+      style="
+        padding:10px 16px;
+        border:0;
+        border-radius:8px;
+        background:#17365d;
+        color:#ffffff;
+        font-weight:700;
+        cursor:pointer;
+      "
+    >
+      Refresh Drafts
+    </button>
+  </div>
+
+  <div id="phase10Summary" style="
+    margin-top:18px;
+    padding:12px;
+    background:#eef4fb;
+    border-radius:8px;
+    color:#17365d;
+    font-weight:700;
+  ">
+    Loading Phase 10 drafts...
+  </div>
+
+  <div id="phase10Message" style="
+    display:none;
+    margin-top:14px;
+    padding:12px;
+    border-radius:8px;
+    font-weight:700;
+  "></div>
+
+  <div id="phase10DraftList" style="margin-top:18px;"></div>
+</section>
+
+<script>
+  function loadPhase10ReviewQueue() {
+    const summaryBox =
+      document.getElementById('phase10Summary');
+
+    const draftList =
+      document.getElementById('phase10DraftList');
+
+    const refreshButton =
+      document.getElementById('phase10RefreshButton');
+
+    summaryBox.textContent =
+      'Loading Phase 10 drafts...';
+
+    draftList.innerHTML = '';
+
+    refreshButton.disabled = true;
+    refreshButton.textContent = 'Loading...';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        refreshButton.disabled = false;
+        refreshButton.textContent = 'Refresh Drafts';
+
+        renderPhase10ReviewQueue(result);
+      })
+      .withFailureHandler(function(error) {
+        refreshButton.disabled = false;
+        refreshButton.textContent = 'Refresh Drafts';
+
+        summaryBox.textContent =
+          'Unable to load the review queue.';
+
+        showPhase10Message(
+          error && error.message
+            ? error.message
+            : 'An unknown loading error occurred.',
+          true
+        );
+      })
+      .getPhase10ReviewQueue();
+  }
+
+
+  function renderPhase10ReviewQueue(result) {
+    const summary =
+      result && result.summary
+        ? result.summary
+        : {};
+
+    const drafts =
+      result && Array.isArray(result.drafts)
+        ? result.drafts
+        : [];
+
+    const summaryBox =
+      document.getElementById('phase10Summary');
+
+    const draftList =
+      document.getElementById('phase10DraftList');
+
+    summaryBox.textContent =
+      'Total: ' + (summary.total || 0) +
+      ' | Awaiting Approval: ' +
+      (summary.awaitingApproval || 0) +
+      ' | Approved: ' +
+      (summary.approved || 0) +
+      ' | Rejected: ' +
+      (summary.rejected || 0) +
+      ' | On Hold: ' +
+      (summary.held || 0);
+
+    draftList.innerHTML = '';
+
+    if (drafts.length === 0) {
+      const emptyMessage =
+        document.createElement('p');
+
+      emptyMessage.textContent =
+        'No Phase 10 drafts are currently available.';
+
+      emptyMessage.style.padding = '16px';
+      emptyMessage.style.background = '#fff7df';
+      emptyMessage.style.borderRadius = '8px';
+
+      draftList.appendChild(emptyMessage);
+      return;
+    }
+
+    drafts.forEach(function(draft, index) {
+      draftList.appendChild(
+        createPhase10DraftCard(draft, index)
+      );
+    });
+  }
+
+
+  function createPhase10DraftCard(draft, index) {
+    const card = document.createElement('article');
+
+    card.style.marginBottom = '20px';
+    card.style.padding = '18px';
+    card.style.border = '1px solid #c7d3e3';
+    card.style.borderRadius = '12px';
+    card.style.background = '#fafcff';
+
+    const heading = document.createElement('h3');
+
+    heading.textContent =
+      'Draft ' + (index + 1) +
+      ': ' + (draft.accountName || 'Unknown Account');
+
+    heading.style.margin = '0 0 10px';
+    heading.style.color = '#17365d';
+
+    card.appendChild(heading);
+
+    card.appendChild(
+      createPhase10InfoLine(
+        'Draft ID',
+        draft.draftId
+      )
+    );
+
+    card.appendChild(
+      createPhase10InfoLine(
+        'Bureau',
+        draft.bureau
+      )
+    );
+
+    card.appendChild(
+      createPhase10InfoLine(
+        'Issue',
+        draft.issueType
+      )
+    );
+
+    card.appendChild(
+      createPhase10InfoLine(
+        'Current Status',
+        draft.approvalStatus ||
+          'AWAITING ERNIE APPROVAL'
+      )
+    );
+
+    const evidenceTitle =
+      document.createElement('strong');
+
+    evidenceTitle.textContent =
+      'Supporting Evidence';
+
+    evidenceTitle.style.display = 'block';
+    evidenceTitle.style.marginTop = '14px';
+
+    card.appendChild(evidenceTitle);
+
+    const evidenceText =
+      document.createElement('p');
+
+    evidenceText.textContent =
+      draft.evidenceExplanation ||
+      'No explanation available.';
+
+    evidenceText.style.whiteSpace = 'pre-wrap';
+    evidenceText.style.lineHeight = '1.5';
+
+    card.appendChild(evidenceText);
+
+    const letterTitle =
+      document.createElement('strong');
+
+    letterTitle.textContent = 'Draft Letter';
+    letterTitle.style.display = 'block';
+    letterTitle.style.marginTop = '14px';
+
+    card.appendChild(letterTitle);
+
+    const letterBox =
+      document.createElement('pre');
+
+    letterBox.textContent =
+      draft.letterBody ||
+      'No letter text available.';
+
+    letterBox.style.whiteSpace = 'pre-wrap';
+    letterBox.style.wordBreak = 'break-word';
+    letterBox.style.padding = '14px';
+    letterBox.style.background = '#ffffff';
+    letterBox.style.border = '1px solid #d8e0ea';
+    letterBox.style.borderRadius = '8px';
+    letterBox.style.fontFamily = 'Arial, sans-serif';
+    letterBox.style.fontSize = '14px';
+    letterBox.style.lineHeight = '1.5';
+
+    card.appendChild(letterBox);
+
+    const noteLabel =
+      document.createElement('label');
+
+    noteLabel.textContent =
+      'Decision Note (optional)';
+
+    noteLabel.style.display = 'block';
+    noteLabel.style.marginTop = '14px';
+    noteLabel.style.fontWeight = '700';
+
+    card.appendChild(noteLabel);
+
+    const noteBox =
+      document.createElement('textarea');
+
+    noteBox.id =
+      'phase10-note-' + index;
+
+    noteBox.value =
+      draft.decisionNote || '';
+
+    noteBox.rows = 3;
+    noteBox.placeholder =
+      'Enter a reason or note if needed.';
+
+    noteBox.style.width = '100%';
+    noteBox.style.boxSizing = 'border-box';
+    noteBox.style.marginTop = '6px';
+    noteBox.style.padding = '10px';
+    noteBox.style.border = '1px solid #aebdce';
+    noteBox.style.borderRadius = '8px';
+
+    card.appendChild(noteBox);
+
+    const buttonRow =
+      document.createElement('div');
+
+    buttonRow.style.display = 'flex';
+    buttonRow.style.gap = '10px';
+    buttonRow.style.flexWrap = 'wrap';
+    buttonRow.style.marginTop = '14px';
+
+    buttonRow.appendChild(
+      createPhase10DecisionButton(
+        'Approve',
+        '#18794e',
+        draft.draftId,
+        'APPROVE',
+        index
+      )
+    );
+
+    buttonRow.appendChild(
+      createPhase10DecisionButton(
+        'Reject',
+        '#b42318',
+        draft.draftId,
+        'REJECT',
+        index
+      )
+    );
+
+    buttonRow.appendChild(
+      createPhase10DecisionButton(
+        'Hold',
+        '#9a6700',
+        draft.draftId,
+        'HOLD',
+        index
+      )
+    );
+
+    card.appendChild(buttonRow);
+
+    return card;
+  }
+
+
+  function createPhase10InfoLine(label, value) {
+    const line = document.createElement('p');
+
+    line.style.margin = '5px 0';
+
+    const labelElement =
+      document.createElement('strong');
+
+    labelElement.textContent = label + ': ';
+
+    const valueElement =
+      document.createElement('span');
+
+    valueElement.textContent =
+      value || 'Not available';
+
+    line.appendChild(labelElement);
+    line.appendChild(valueElement);
+
+    return line;
+  }
+
+
+  function createPhase10DecisionButton(
+    label,
+    color,
+    draftId,
+    decision,
+    index
+  ) {
+    const button =
+      document.createElement('button');
+
+    button.type = 'button';
+    button.textContent = label;
+
+    button.style.padding = '10px 18px';
+    button.style.border = '0';
+    button.style.borderRadius = '8px';
+    button.style.background = color;
+    button.style.color = '#ffffff';
+    button.style.fontWeight = '700';
+    button.style.cursor = 'pointer';
+
+    button.onclick = function() {
+      savePhase10DashboardDecision(
+        draftId,
+        decision,
+        index,
+        button
+      );
+    };
+
+    return button;
+  }
+
+
+  function savePhase10DashboardDecision(
+    draftId,
+    decision,
+    index,
+    button
+  ) {
+    const noteBox =
+      document.getElementById(
+        'phase10-note-' + index
+      );
+
+    const decisionNote =
+      noteBox ? noteBox.value.trim() : '';
+
+    button.disabled = true;
+    button.textContent = 'Saving...';
+
+    google.script.run
+      .withSuccessHandler(function() {
+        showPhase10Message(
+          decision +
+          ' saved successfully for ' +
+          draftId +
+          '.',
+          false
+        );
+
+        loadPhase10ReviewQueue();
+      })
+      .withFailureHandler(function(error) {
+        button.disabled = false;
+        button.textContent =
+          decision === 'APPROVE'
+            ? 'Approve'
+            : decision === 'REJECT'
+              ? 'Reject'
+              : 'Hold';
+
+        showPhase10Message(
+          error && error.message
+            ? error.message
+            : 'The decision could not be saved.',
+          true
+        );
+      })
+      .savePhase10ReviewDecision(
+        draftId,
+        decision,
+        decisionNote
+      );
+  }
+
+
+  function showPhase10Message(message, isError) {
+    const messageBox =
+      document.getElementById('phase10Message');
+
+    messageBox.textContent = message;
+    messageBox.style.display = 'block';
+    messageBox.style.background =
+      isError ? '#fde7e7' : '#e7f6ec';
+    messageBox.style.color =
+      isError ? '#8a1c1c' : '#145c36';
+  }
+
+
+  document.addEventListener(
+    'DOMContentLoaded',
+    function() {
+      loadPhase10ReviewQueue();
+    }
+  );
+</script>
+</body>
+</html>

@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+
+  <title>Moore Holdings Credit Agent</title>
+
+  <style>
+    :root {
+      --navy: #071a2d;
+      --navy-light: #102d4a;
+      --gold: #d6a83d;
+      --gold-light: #f2d17c;
+      --blue: #1f6feb;
+      --green: #198754;
+      --red: #c62828;
+      --orange: #d97706;
+      --gray: #64748b;
+      --light: #f4f7fb;
+      --white: #ffffff;
+      --border: #d8e0ea;
+      --shadow: 0 8px 24px rgba(7, 26, 45, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--light);
+      color: #172033;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    header {
+      background:
+        linear-gradient(
+          135deg,
+          var(--navy),
+          var(--navy-light)
+        );
+      color: var(--white);
+      padding: 22px 24px;
+      border-bottom: 4px solid var(--gold);
+    }
+
+    .header-row {
+      max-width: 1500px;
+      margin: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 25px;
+      letter-spacing: 0.3px;
+    }
+
+    .brand p {
+      margin: 7px 0 0;
+      color: #cfdae7;
+      font-size: 14px;
+    }
+
+    .system-badge {
+      background: rgba(25, 135, 84, 0.18);
+      color: #8ff0bb;
+      border: 1px solid #4bb87b;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    main {
+      max-width: 1500px;
+      margin: auto;
+      padding: 22px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 15px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(0.97);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      color: white;
+      background: var(--blue);
+    }
+
+    .btn-gold {
+      color: var(--navy);
+      background: var(--gold);
+    }
+
+    .btn-neutral {
+      color: white;
+      background: var(--gray);
+    }
+
+    .btn-approve {
+      color: white;
+      background: var(--green);
+    }
+
+    .btn-hold {
+      color: white;
+      background: var(--orange);
+    }
+
+    .btn-reject {
+      color: white;
+      background: var(--red);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fit, minmax(175px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 17px;
+      min-height: 106px;
+    }
+
+    .card-label {
+      color: var(--gray);
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .card-value {
+      margin-top: 10px;
+      color: var(--navy);
+      font-size: 30px;
+      font-weight: bold;
+    }
+
+    .card-note {
+      margin-top: 5px;
+      color: var(--gray);
+      font-size: 12px;
+    }
+
+    .panel {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 17px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 19px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    select,
+    input {
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 9px 10px;
+      background: white;
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 1250px;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: #edf2f8;
+      color: var(--navy);
+      padding: 12px 10px;
+      text-align: left;
+      font-size: 12px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+    }
+
+    td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #e9eef4;
+      vertical-align: top;
+      font-size: 13px;
+    }
+
+    tr:hover {
+      background: #f8fbff;
+    }
+
+    .pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .pill-high {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .pill-medium {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .pill-low {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .pill-pending {
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    .pill-approved {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .pill-rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .pill-hold {
+      background: #ffedd5;
+      color: #9a3412;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .action-buttons button {
+      padding: 7px 9px;
+      font-size: 11px;
+    }
+
+    .message {
+      display: none;
+      margin-bottom: 15px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .message-info {
+      display: block;
+      color: #1e3a8a;
+      background: #dbeafe;
+      border: 1px solid #93c5fd;
+    }
+
+    .message-success {
+      display: block;
+      color: #166534;
+      background: #dcfce7;
+      border: 1px solid #86efac;
+    }
+
+    .message-error {
+      display: block;
+      color: #991b1b;
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+    }
+
+    .loading {
+      padding: 35px;
+      text-align: center;
+      color: var(--gray);
+      font-weight: bold;
+    }
+
+    .empty {
+      padding: 35px;
+      text-align: center;
+      color: var(--gray);
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      color: var(--gray);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 700px) {
+      header {
+        padding: 18px 15px;
+      }
+
+      main {
+        padding: 14px;
+      }
+
+      .brand h1 {
+        font-size: 21px;
+      }
+
+      .toolbar button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="header-row">
+      <div class="brand">
+        <h1>Moore Holdings Credit Agent</h1>
+        <p>
+          Executive Dashboard • Ernest Moore Jr. •
+          Moore Holdings Group LLC
+        </p>
+      </div>
+
+      <div class="system-badge">
+        ● CLOUD SYSTEM ONLINE
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="message" class="message"></div>
+
+    <div class="toolbar">
+      <button
+        class="btn-primary"
+        onclick="loadDashboard()">
+        Refresh Dashboard
+      </button>
+
+      <button
+        id="scanButton"
+        class="btn-gold"
+        onclick="runPersonalScan()">
+        Scan Personal Credit
+      </button>
+
+      <button
+        class="btn-neutral"
+        onclick="showPendingOnly()">
+        Show Pending Reviews
+      </button>
+
+      <button
+        class="btn-neutral"
+        onclick="showHighPriority()">
+        Show High Priority
+      </button>
+
+      <button
+        class="btn-neutral"
+        onclick="resetFilters()">
+        Show All
+      </button>
+    </div>
+
+    <section class="cards">
+      <div class="card">
+        <div class="card-label">Phase 8 Reviews</div>
+        <div id="totalReviews" class="card-value">—</div>
+        <div class="card-note">Current review queue</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">High Priority</div>
+        <div id="highPriority" class="card-value">—</div>
+        <div class="card-note">Review first</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Medium Priority</div>
+        <div id="mediumPriority" class="card-value">—</div>
+        <div class="card-note">Standard review</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Pending Approval</div>
+        <div id="pendingReviews" class="card-value">—</div>
+        <div class="card-note">Waiting for Ernest</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Approved</div>
+        <div id="approvedReviews" class="card-value">—</div>
+        <div class="card-note">Approved decisions</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">On Hold</div>
+        <div id="holdReviews" class="card-value">—</div>
+        <div class="card-note">Needs verification</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Rejected</div>
+        <div id="rejectedReviews" class="card-value">—</div>
+        <div class="card-note">Rejected decisions</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>AI Review & Approval Queue</h2>
+
+        <div class="filters">
+          <select
+            id="priorityFilter"
+            onchange="applyFilters()">
+            <option value="">All Priorities</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+
+          <select
+            id="decisionFilter"
+            onchange="applyFilters()">
+            <option value="">All Decisions</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Hold">Hold</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+
+          <input
+            id="searchBox"
+            type="search"
+            placeholder="Search account..."
+            oninput="applyFilters()">
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Account</th>
+              <th>Number</th>
+              <th>Priority</th>
+              <th>Review Stage</th>
+              <th>Recommended Action</th>
+              <th>Letter Readiness</th>
+              <th>Decision</th>
+              <th>Approval Controls</th>
+            </tr>
+          </thead>
+
+          <tbody id="reviewRows">
+            <tr>
+              <td colspan="9" class="loading">
+                Loading the Moore Holdings Credit Agent...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="footer-note">
+      Safety rule: No Personal Credit Repair record is changed
+      without Ernest Moore Jr.'s approval.
+    </div>
+  </main>
+
+  <script>
+    let phase9Reviews = [];
+
+    const PHASE9_CONFIRMATION =
+      'ERNEST_APPROVES_REVIEW_DECISION';
+
+
+    function loadDashboard() {
+      showMessage(
+        'Loading the latest credit-agent data...',
+        'info'
+      );
+
+      setLoadingState();
+
+      google.script.run
+        .withSuccessHandler(handleDashboardData)
+        .withFailureHandler(handleFailure)
+        .getPhase8AIReviewLayerData();
+    }
+
+
+    function handleDashboardData(data) {
+      phase9Reviews =
+        Array.isArray(data.reviews)
+          ? data.reviews
+          : [];
+
+      updateSummaryCards(data.summary || {});
+      applyFilters();
+
+      showMessage(
+        'Dashboard refreshed successfully.',
+        'success'
+      );
+    }
+
+
+    function updateSummaryCards(summary) {
+      setText(
+        'totalReviews',
+        summary.totalRecords || 0
+      );
+
+      setText(
+        'highPriority',
+        summary.highPriority || 0
+      );
+
+      setText(
+        'mediumPriority',
+        summary.mediumPriority || 0
+      );
+
+      setText(
+        'pendingReviews',
+        summary.pending || 0
+      );
+
+      setText(
+        'approvedReviews',
+        summary.approved || 0
+      );
+
+      setText(
+        'holdReviews',
+        summary.hold || 0
+      );
+
+      setText(
+        'rejectedReviews',
+        summary.rejected || 0
+      );
+    }
+
+
+    function applyFilters() {
+      const priority =
+        document.getElementById(
+          'priorityFilter'
+        ).value;
+
+      const decision =
+        document.getElementById(
+          'decisionFilter'
+        ).value;
+
+      const search =
+        document.getElementById(
+          'searchBox'
+        ).value
+          .trim()
+          .toLowerCase();
+
+      const filtered = phase9Reviews.filter(
+        function(review) {
+          const priorityMatch =
+            !priority ||
+            review.priority === priority;
+
+          const decisionMatch =
+            !decision ||
+            review.currentDecision === decision;
+
+          const searchText = [
+            review.name,
+            review.accountName,
+            review.accountNumber,
+            review.actionStage,
+            review.actionNeeded,
+            review.violationTag
+          ]
+            .join(' ')
+            .toLowerCase();
+
+          const searchMatch =
+            !search ||
+            searchText.indexOf(search) !== -1;
+
+          return (
+            priorityMatch &&
+            decisionMatch &&
+            searchMatch
+          );
+        }
+      );
+
+      renderReviewRows(filtered);
+    }
+
+
+    function renderReviewRows(reviews) {
+      const tbody =
+        document.getElementById('reviewRows');
+
+      tbody.innerHTML = '';
+
+      if (!reviews.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+
+        cell.colSpan = 9;
+        cell.className = 'empty';
+        cell.textContent =
+          'No review records match the current filters.';
+
+        row.appendChild(cell);
+        tbody.appendChild(row);
+        return;
+      }
+
+      reviews.forEach(function(review, index) {
+        const row = document.createElement('tr');
+
+        appendCell(row, index + 1);
+        appendCell(row, review.accountName);
+        appendCell(row, review.accountNumber);
+
+        const priorityCell =
+          document.createElement('td');
+
+        priorityCell.appendChild(
+          createPill(
+            review.priority,
+            priorityPillClass(review.priority)
+          )
+        );
+
+        row.appendChild(priorityCell);
+
+        appendCell(row, review.actionStage);
+        appendCell(
+          row,
+          review.recommendedNextAction
+        );
+
+        appendCell(
+          row,
+          review.letterReadiness
+        );
+
+        const decisionCell =
+          document.createElement('td');
+
+        decisionCell.appendChild(
+          createPill(
+            review.currentDecision,
+            decisionPillClass(
+              review.currentDecision
+            )
+          )
+        );
+
+        row.appendChild(decisionCell);
+
+        const controls =
+          document.createElement('td');
+
+        controls.className = 'action-buttons';
+
+        controls.appendChild(
+          createDecisionButton(
+            'Approve',
+            'Approved',
+            'btn-approve',
+            review
+          )
+        );
+
+        controls.appendChild(
+          createDecisionButton(
+            'Hold',
+            'Hold',
+            'btn-hold',
+            review
+          )
+        );
+
+        controls.appendChild(
+          createDecisionButton(
+            'Reject',
+            'Rejected',
+            'btn-reject',
+            review
+          )
+        );
+
+        row.appendChild(controls);
+        tbody.appendChild(row);
+      });
+    }
+
+
+    function createDecisionButton(
+      label,
+      decision,
+      className,
+      review
+    ) {
+      const button =
+        document.createElement('button');
+
+      button.textContent = label;
+      button.className = className;
+
+      button.onclick = function() {
+        submitDecision(review, decision);
+      };
+
+      return button;
+    }
+
+
+    function submitDecision(review, decision) {
+      const approved = window.confirm(
+        'Confirm ' +
+        decision +
+        ' for ' +
+        review.accountName +
+        ' ending ' +
+        review.accountNumber +
+        '?\n\n' +
+        'This changes only the Phase 7 Review status. ' +
+        'It does not change the Personal Credit Repair table.'
+      );
+
+      if (!approved) {
+        return;
+      }
+
+      showMessage(
+        'Saving ' +
+        decision +
+        ' decision for ' +
+        review.accountName +
+        '...',
+        'info'
+      );
+
+      google.script.run
+        .withSuccessHandler(function() {
+          showMessage(
+            'Decision saved successfully.',
+            'success'
+          );
+
+          loadDashboard();
+        })
+        .withFailureHandler(handleFailure)
+        .setPhase8ReviewDecision(
+          review.recordId,
+          decision,
+          PHASE9_CONFIRMATION
+        );
+    }
+
+
+    function runPersonalScan() {
+      const scanButton =
+        document.getElementById('scanButton');
+
+      scanButton.disabled = true;
+
+      showMessage(
+        'Running the read-only Personal Credit scan...',
+        'info'
+      );
+
+      google.script.run
+        .withSuccessHandler(function() {
+          scanButton.disabled = false;
+
+          showMessage(
+            'Personal Credit scan completed.',
+            'success'
+          );
+
+        
+        })
+        .withFailureHandler(function(error) {
+          scanButton.disabled = false;
+          handleFailure(error);
+        })
+        .scanPersonalCredit();
+    }
+
+
+    function showPendingOnly() {
+      document.getElementById(
+        'decisionFilter'
+      ).value = 'Pending';
+
+      applyFilters();
+    }
+
+
+    function showHighPriority() {
+      document.getElementById(
+        'priorityFilter'
+      ).value = 'High';
+
+      applyFilters();
+    }
+
+
+    function resetFilters() {
+      document.getElementById(
+        'priorityFilter'
+      ).value = '';
+
+      document.getElementById(
+        'decisionFilter'
+      ).value = '';
+
+      document.getElementById(
+        'searchBox'
+      ).value = '';
+
+      applyFilters();
+    }
+
+
+    function setLoadingState() {
+      const tbody =
+        document.getElementById('reviewRows');
+
+      tbody.innerHTML =
+        '<tr><td colspan="9" class="loading">' +
+        'Loading review records...' +
+        '</td></tr>';
+    }
+
+
+    function appendCell(row, value) {
+      const cell = document.createElement('td');
+
+      cell.textContent =
+        value === null ||
+        value === undefined ||
+        value === ''
+          ? '—'
+          : String(value);
+
+      row.appendChild(cell);
+    }
+
+
+    function createPill(text, className) {
+      const pill = document.createElement('span');
+
+      pill.className = 'pill ' + className;
+      pill.textContent = text || 'Pending';
+
+      return pill;
+    }
+
+
+    function priorityPillClass(priority) {
+      if (priority === 'High') {
+        return 'pill-high';
+      }
+
+      if (priority === 'Low') {
+        return 'pill-low';
+      }
+
+      return 'pill-medium';
+    }
+
+
+    function decisionPillClass(decision) {
+      if (decision === 'Approved') {
+        return 'pill-approved';
+      }
+
+      if (decision === 'Rejected') {
+        return 'pill-rejected';
+      }
+
+      if (decision === 'Hold') {
+        return 'pill-hold';
+      }
+
+      return 'pill-pending';
+    }
+
+
+    function setText(id, value) {
+      document.getElementById(id).textContent =
+        String(value);
+    }
+
+
+    function showMessage(message, type) {
+      const box =
+        document.getElementById('message');
+
+      box.textContent = message;
+      box.className =
+        'message message-' + type;
+    }
+
+
+    function handleFailure(error) {
+      const message =
+        error && error.message
+          ? error.message
+          : String(error);
+
+      showMessage(
+        'Error: ' + message,
+        'error'
+      );
+    }
+
+
+    window.addEventListener(
+      'load',
+      loadDashboard
+    );
+  </script>
+<!-- PHASE 10 — LETTER REVIEW PANEL -->
+<section id="phase10ReviewPanel" style="
+  margin:24px auto;
+  padding:20px;
+  max-width:1100px;
+  background:#fff;
+  border:2px solid #17365d;
+  border-radius:14px;
+  box-shadow:0 4px 14px rgba(0,0,0,.12);
+">
+  <div style="
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    flex-wrap:wrap;
+  ">
+    <div>
+      <h2 style="margin:0;color:#17365d;">
+        Phase 10 Letter Review
+      </h2>
+
+      <p style="margin:6px 0 0;color:#555;">
+        Review each draft and select Approve, Reject, or Hold.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      id="phase10RefreshButton"
+      onclick="loadPhase10ReviewQueue()"
+      style="
+        padding:10px 16px;
+        border:0;
+        border-radius:8px;
+        background:#17365d;
+        color:#fff;
+        font-weight:700;
+        cursor:pointer;
+      "
+    >
+      Refresh Drafts
+    </button>
+  </div>
+
+  <div id="phase10Summary" style="
+    margin-top:18px;
+    padding:12px;
+    background:#eef4fb;
+    border-radius:8px;
+    color:#17365d;
+    font-weight:700;
+  ">
+    Loading Phase 10 drafts...
+  </div>
+
+  <div id="phase10Message" style="
+    display:none;
+    margin-top:14px;
+    padding:12px;
+    border-radius:8px;
+    font-weight:700;
+  "></div>
+
+  <div id="phase10DraftList" style="margin-top:18px;"></div>
+</section>
+
+<script>
+  function loadPhase10ReviewQueue() {
+    const summaryBox =
+      document.getElementById('phase10Summary');
+
+    const draftList =
+      document.getElementById('phase10DraftList');
+
+    const refreshButton =
+      document.getElementById('phase10RefreshButton');
+
+    summaryBox.textContent =
+      'Loading Phase 10 drafts...';
+
+    draftList.innerHTML = '';
+    refreshButton.disabled = true;
+    refreshButton.textContent = 'Loading...';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        refreshButton.disabled = false;
+        refreshButton.textContent = 'Refresh Drafts';
+        renderPhase10ReviewQueue(result);
+      })
+      .withFailureHandler(function(error) {
+        refreshButton.disabled = false;
+        refreshButton.textContent = 'Refresh Drafts';
+
+        summaryBox.textContent =
+          'Unable to load the review queue.';
+
+        showPhase10Message(
+          error && error.message
+            ? error.message
+            : 'An unknown loading error occurred.',
+          true
+        );
+      })
+      .getPhase10ReviewQueue();
+  }
+
+
+  function renderPhase10ReviewQueue(result) {
+    const summary =
+      result && result.summary
+        ? result.summary
+        : {};
+
+    const drafts =
+      result && Array.isArray(result.drafts)
+        ? result.drafts
+        : [];
+
+    const summaryBox =
+      document.getElementById('phase10Summary');
+
+    const draftList =
+      document.getElementById('phase10DraftList');
+
+    summaryBox.textContent =
+      'Total: ' + (summary.total || 0) +
+      ' | Awaiting Approval: ' +
+      (summary.awaitingApproval || 0) +
+      ' | Approved: ' +
+      (summary.approved || 0) +
+      ' | Rejected: ' +
+      (summary.rejected || 0) +
+      ' | On Hold: ' +
+      (summary.held || 0);
+
+    draftList.innerHTML = '';
+
+    if (drafts.length === 0) {
+      const emptyMessage =
+        document.createElement('p');
+
+      emptyMessage.textContent =
+        'No Phase 10 drafts are currently available.';
+
+      emptyMessage.style.padding = '16px';
+      emptyMessage.style.background = '#fff7df';
+      emptyMessage.style.borderRadius = '8px';
+
+      draftList.appendChild(emptyMessage);
+      return;
+    }
+
+    drafts.forEach(function(draft, index) {
+      draftList.appendChild(
+        createPhase10DraftCard(draft, index)
+      );
+    });
+  }
+
+
+  function createPhase10DraftCard(draft, index) {
+    const card = document.createElement('article');
+
+    card.style.marginBottom = '20px';
+    card.style.padding = '18px';
+    card.style.border = '1px solid #c7d3e3';
+    card.style.borderRadius = '12px';
+    card.style.background = '#fafcff';
+
+    const heading = document.createElement('h3');
+
+    heading.textContent =
+      'Draft ' + (index + 1) +
+      ': ' + (draft.accountName || 'Unknown Account');
+
+    heading.style.margin = '0 0 10px';
+    heading.style.color = '#17365d';
+
+    card.appendChild(heading);
+
+    card.appendChild(
+      createPhase10InfoLine(
+        'Draft ID',
+        draft.draftId
+      )
+    );
+
+    card.appendChild(
+      createPhase10InfoLine(
+        'Bureau',
+        draft.bureau
+      )
+    );
+
+    card.appendChild(
+      createPhase10InfoLine(
+        'Issue',
+        draft.issueType
+      )
+    );
+
+    card.appendChild(
+      createPhase10InfoLine(
+        'Current Status',
+        draft.approvalStatus ||
+          'AWAITING ERNIE APPROVAL'
+      )
+    );
+
+    const evidenceTitle =
+      document.createElement('strong');
+
+    evidenceTitle.textContent =
+      'Supporting Evidence';
+
+    evidenceTitle.style.display = 'block';
+    evidenceTitle.style.marginTop = '14px';
+
+    card.appendChild(evidenceTitle);
+
+    const evidenceText =
+      document.createElement('p');
+
+    evidenceText.textContent =
+      draft.evidenceExplanation ||
+      'No explanation available.';
+
+    evidenceText.style.whiteSpace = 'pre-wrap';
+    evidenceText.style.lineHeight = '1.5';
+
+    card.appendChild(evidenceText);
+
+    const letterTitle =
+      document.createElement('strong');
+
+    letterTitle.textContent = 'Draft Letter';
+    letterTitle.style.display = 'block';
+    letterTitle.style.marginTop = '14px';
+
+    card.appendChild(letterTitle);
+
+    const letterBox =
+      document.createElement('pre');
+
+    letterBox.textContent =
+      draft.letterBody ||
+      'No letter text available.';
+
+    letterBox.style.whiteSpace = 'pre-wrap';
+    letterBox.style.wordBreak = 'break-word';
+    letterBox.style.padding = '14px';
+    letterBox.style.background = '#fff';
+    letterBox.style.border = '1px solid #d8e0ea';
+    letterBox.style.borderRadius = '8px';
+    letterBox.style.fontFamily = 'Arial, sans-serif';
+    letterBox.style.fontSize = '14px';
+    letterBox.style.lineHeight = '1.5';
+
+    card.appendChild(letterBox);
+
+    const noteLabel =
+      document.createElement('label');
+
+    noteLabel.textContent =
+      'Decision Note (optional)';
+
+    noteLabel.style.display = 'block';
+    noteLabel.style.marginTop = '14px';
+    noteLabel.style.fontWeight = '700';
+
+    card.appendChild(noteLabel);
+
+    const noteBox =
+      document.createElement('textarea');
+
+    noteBox.id =
+      'phase10-note-' + index;
+
+    noteBox.value =
+      draft.decisionNote || '';
+
+    noteBox.rows = 3;
+    noteBox.placeholder =
+      'Enter a reason or note if needed.';
+
+    noteBox.style.width = '100%';
+    noteBox.style.boxSizing = 'border-box';
+    noteBox.style.marginTop = '6px';
+    noteBox.style.padding = '10px';
+    noteBox.style.border = '1px solid #aebdce';
+    noteBox.style.borderRadius = '8px';
+
+    card.appendChild(noteBox);
+
+    const buttonRow =
+      document.createElement('div');
+
+    buttonRow.style.display = 'flex';
+    buttonRow.style.gap = '10px';
+    buttonRow.style.flexWrap = 'wrap';
+    buttonRow.style.marginTop = '14px';
+
+    buttonRow.appendChild(
+      createPhase10DecisionButton(
+        'Approve',
+        '#18794e',
+        draft.draftId,
+        'APPROVE',
+        index
+      )
+    );
+
+    buttonRow.appendChild(
+      createPhase10DecisionButton(
+        'Reject',
+        '#b42318',
+        draft.draftId,
+        'REJECT',
+        index
+      )
+    );
+
+    buttonRow.appendChild(
+      createPhase10DecisionButton(
+        'Hold',
+        '#9a6700',
+        draft.draftId,
+        'HOLD',
+        index
+      )
+    );
+
+    card.appendChild(buttonRow);
+    return card;
+  }
+
+
+  function createPhase10InfoLine(label, value) {
+    const line = document.createElement('p');
+
+    line.style.margin = '5px 0';
+
+    const labelElement =
+      document.createElement('strong');
+
+    labelElement.textContent = label + ': ';
+
+    const valueElement =
+      document.createElement('span');
+
+    valueElement.textContent =
+      value || 'Not available';
+
+    line.appendChild(labelElement);
+    line.appendChild(valueElement);
+
+    return line;
+  }
+
+
+  function createPhase10DecisionButton(
+    label,
+    color,
+    draftId,
+    decision,
+    index
+  ) {
+    const button =
+      document.createElement('button');
+
+    button.type = 'button';
+    button.textContent = label;
+    button.style.padding = '10px 18px';
+    button.style.border = '0';
+    button.style.borderRadius = '8px';
+    button.style.background = color;
+    button.style.color = '#fff';
+    button.style.fontWeight = '700';
+    button.style.cursor = 'pointer';
+
+    button.onclick = function() {
+      savePhase10DashboardDecision(
+        draftId,
+        decision,
+        index,
+        button
+      );
+    };
+
+    return button;
+  }
+
+
+  function savePhase10DashboardDecision(
+    draftId,
+    decision,
+    index,
+    button
+  ) {
+    const noteBox =
+      document.getElementById(
+        'phase10-note-' + index
+      );
+
+    const decisionNote =
+      noteBox ? noteBox.value.trim() : '';
+
+    button.disabled = true;
+    button.textContent = 'Saving...';
+
+    google.script.run
+      .withSuccessHandler(function() {
+        showPhase10Message(
+          decision +
+          ' saved successfully for ' +
+          draftId +
+          '.',
+          false
+        );
+
+        loadPhase10ReviewQueue();
+      })
+      .withFailureHandler(function(error) {
+        button.disabled = false;
+        button.textContent =
+          decision === 'APPROVE'
+            ? 'Approve'
+            : decision === 'REJECT'
+              ? 'Reject'
+              : 'Hold';
+
+        showPhase10Message(
+          error && error.message
+            ? error.message
+            : 'The decision could not be saved.',
+          true
+        );
+      })
+      .savePhase10ReviewDecision(
+        draftId,
+        decision,
+        decisionNote
+      );
+  }
+
+
+  function showPhase10Message(message, isError) {
+    const messageBox =
+      document.getElementById('phase10Message');
+
+    messageBox.textContent = message;
+    messageBox.style.display = 'block';
+    messageBox.style.background =
+      isError ? '#fde7e7' : '#e7f6ec';
+    messageBox.style.color =
+      isError ? '#8a1c1c' : '#145c36';
+  }
+
+
+  document.addEventListener(
+    'DOMContentLoaded',
+    function() {
+      loadPhase10ReviewQueue();
+    }
+  );
+</script>
+</body>
+</html>
