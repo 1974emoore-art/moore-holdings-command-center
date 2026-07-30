@@ -11,6 +11,223 @@
  * No Airtable records are created, updated, or deleted.
  */
 
+/**
+ * Runs the complete Phase 7 sequence in dry-run mode by default.
+ *
+ * This is the single entry point for the Phase 7 workflow and
+ * prevents any Airtable writes unless liveMode is explicitly
+ * enabled and approved.
+ */
+function runPhase7FullSequence(options) {
+  const settings = Object.assign(
+    {
+      liveMode: false,
+      approved: false,
+      stopOnValidationError: true
+    },
+    options || {}
+  );
+
+  const startedAt = new Date();
+  const summary = {
+    startedAt: startedAt.toISOString(),
+    completed: false,
+    stopped: false,
+    mode: settings.liveMode && settings.approved ? 'live' : 'dry-run',
+    liveWritesRequested: Boolean(settings.liveMode && settings.approved),
+    batchPlanValid: false,
+    reviewWorkflowValid: false,
+    writerPlanValid: false,
+    reportAccountsProcessed: 0,
+    reviewQueueCount: 0,
+    workflowRecordCount: 0,
+    writerBatchCount: 0,
+    stopReason: '',
+    error: ''
+  };
+
+  console.log('PHASE 7 FULL SEQUENCE STARTED');
+
+  try {
+    if (settings.liveMode && !settings.approved) {
+      summary.mode = 'blocked';
+      summary.stopped = true;
+      summary.stopReason = 'Live mode requires explicit approval.';
+      summary.liveWritesRequested = true;
+      console.log('PHASE 7 FULL SEQUENCE BLOCKED: Live mode requires approval.');
+
+      return {
+        mode: summary.mode,
+        summary: summary,
+        batchItems: [],
+        reviewQueue: [],
+        workflow: null,
+        writerPlan: null,
+        writerResult: null
+      };
+    }
+
+    const batchPlanResult = buildPhase7FullBatchPlan_();
+    const batchItems = Array.isArray(batchPlanResult && batchPlanResult.batchItems)
+      ? batchPlanResult.batchItems
+      : [];
+
+    summary.reportAccountsProcessed = batchItems.length;
+    summary.batchItems = batchItems;
+
+    const batchValidation = validatePhase7BatchPlan_(batchItems);
+    summary.batchPlanValidation = batchValidation;
+    summary.batchPlanValid = Boolean(batchValidation && batchValidation.valid);
+
+    if (!summary.batchPlanValid) {
+      summary.stopped = true;
+      summary.stopReason = 'Batch plan validation failed.';
+      console.log('PHASE 7 FULL SEQUENCE STOPPED: ' + summary.stopReason);
+
+      return {
+        mode: summary.mode,
+        summary: summary,
+        batchItems: batchItems,
+        reviewQueue: [],
+        workflow: null,
+        writerPlan: null,
+        writerResult: null
+      };
+    }
+
+    const reviewQueueResult = buildPhase7BatchReviewQueue_();
+    const reviewQueue = Array.isArray(reviewQueueResult && reviewQueueResult.reviewQueue)
+      ? reviewQueueResult.reviewQueue
+      : [];
+
+    summary.reviewQueue = reviewQueue;
+    summary.reviewQueueCount = reviewQueue.length;
+
+    if (!reviewQueue.length) {
+      summary.stopped = true;
+      summary.stopReason = 'No Phase 7 review items were generated.';
+      console.log('PHASE 7 FULL SEQUENCE STOPPED: ' + summary.stopReason);
+
+      return {
+        mode: summary.mode,
+        summary: summary,
+        batchItems: batchItems,
+        reviewQueue: reviewQueue,
+        workflow: null,
+        writerPlan: null,
+        writerResult: null
+      };
+    }
+
+    const workflow = buildPhase7AirtableReviewWorkflow_();
+    const workflowValidation = validatePhase7AirtableReviewWorkflow_(workflow);
+    summary.reviewWorkflowValidation = workflowValidation;
+    summary.reviewWorkflowValid = Boolean(workflowValidation && workflowValidation.valid);
+    summary.workflowRecordCount = Array.isArray(workflow && workflow.airtableReviewRecords)
+      ? workflow.airtableReviewRecords.length
+      : 0;
+    summary.workflow = workflow;
+
+    if (!summary.reviewWorkflowValid) {
+      summary.stopped = true;
+      summary.stopReason = 'Phase 7 review workflow validation failed.';
+      console.log('PHASE 7 FULL SEQUENCE STOPPED: ' + summary.stopReason);
+
+      return {
+        mode: summary.mode,
+        summary: summary,
+        batchItems: batchItems,
+        reviewQueue: reviewQueue,
+        workflow: workflow,
+        writerPlan: null,
+        writerResult: null
+      };
+    }
+
+    const writerPlan = buildPhase7ReviewWriterPlan_();
+    const writerValidation = validatePhase7ReviewWriterPlan_(writerPlan);
+    summary.writerPlanValidation = writerValidation;
+    summary.writerPlanValid = Boolean(writerValidation && writerValidation.valid);
+    summary.writerBatchCount = Array.isArray(writerPlan && writerPlan.batches)
+      ? writerPlan.batches.length
+      : 0;
+    summary.writerPlan = writerPlan;
+
+    if (!summary.writerPlanValid) {
+      summary.stopped = true;
+      summary.stopReason = 'Phase 7 writer plan validation failed.';
+      console.log('PHASE 7 FULL SEQUENCE STOPPED: ' + summary.stopReason);
+
+      return {
+        mode: summary.mode,
+        summary: summary,
+        batchItems: batchItems,
+        reviewQueue: reviewQueue,
+        workflow: workflow,
+        writerPlan: writerPlan,
+        writerResult: null
+      };
+    }
+
+    if (!summary.writerBatchCount) {
+      summary.stopped = true;
+      summary.stopReason = 'No Phase 7 writer batches were prepared.';
+      console.log('PHASE 7 FULL SEQUENCE STOPPED: ' + summary.stopReason);
+
+      return {
+        mode: summary.mode,
+        summary: summary,
+        batchItems: batchItems,
+        reviewQueue: reviewQueue,
+        workflow: workflow,
+        writerPlan: writerPlan,
+        writerResult: null
+      };
+    }
+
+    let writerResult = null;
+
+    if (settings.liveMode && settings.approved) {
+      armPhase7WriteAuthorization();
+      writerResult = executePhase7ReviewWriter();
+    }
+
+    summary.completed = true;
+    summary.stopReason = settings.liveMode && settings.approved
+      ? 'Live Phase 7 execution completed.'
+      : 'Dry-run Phase 7 execution completed successfully.';
+    summary.writerResult = writerResult;
+    summary.finishedAt = new Date().toISOString();
+
+    console.log('PHASE 7 FULL SEQUENCE COMPLETED');
+
+    return {
+      mode: summary.mode,
+      summary: summary,
+      batchItems: batchItems,
+      reviewQueue: reviewQueue,
+      workflow: workflow,
+      writerPlan: writerPlan,
+      writerResult: writerResult
+    };
+  } catch (error) {
+    summary.stopped = true;
+    summary.completed = false;
+    summary.error = error && error.message ? error.message : String(error);
+    summary.finishedAt = new Date().toISOString();
+    console.error('PHASE 7 FULL SEQUENCE ERROR: ' + summary.error);
+
+    return {
+      mode: summary.mode,
+      summary: summary,
+      batchItems: [],
+      reviewQueue: [],
+      workflow: null,
+      writerPlan: null,
+      writerResult: null
+    };
+  }
+}
 
 /**
  * Converts one Phase 6 decision into a Phase 7 batch category.
