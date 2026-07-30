@@ -342,6 +342,15 @@
       >
         Scan Personal Credit
       </button>
+
+      <button
+        id="phase7Button"
+        class="refresh-button"
+        type="button"
+        onclick="runPhase7Sequence()"
+      >
+        Run Phase 7 Review
+      </button>
     </div>
 
     <div id="message" class="message loading">
@@ -799,6 +808,37 @@ if (priorityArea) {
           setButtonsDisabled(false);
         })
         .scanPersonalCredit();
+    }
+
+    function runPhase7Sequence() {
+      setButtonsDisabled(true);
+      setMessage(
+        'Running the Phase 7 review workflow in dry-run mode...',
+        'loading'
+      );
+
+      google.script.run
+        .withSuccessHandler(function(data) {
+          const summary = data && data.summary ? data.summary : {};
+          const mode = data && data.mode ? data.mode : 'dry-run';
+          const completed = Boolean(summary.completed);
+          const stopped = Boolean(summary.stopped);
+          const reason = summary.stopReason || '';
+          const details = completed
+            ? 'Phase 7 completed in ' + mode + ' mode.'
+            : stopped
+              ? 'Phase 7 stopped: ' + reason
+              : 'Phase 7 did not complete.';
+
+          setMessage(details, completed ? 'success' : 'error');
+          setButtonsDisabled(false);
+        })
+        .withFailureHandler(function(error) {
+          const details = error && error.message ? error.message : String(error);
+          setMessage('Phase 7 orchestration error: ' + details, 'error');
+          setButtonsDisabled(false);
+        })
+        .runPhase7FullSequence({ liveMode: false, approved: false });
     }
 
     function initializeDataQualityGate() {
