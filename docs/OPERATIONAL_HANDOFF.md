@@ -6,7 +6,8 @@
 - Protected branch: `main`
 - Apps Script project: `10_VITKZtmyVRU1PXnomHw6oeNd1YGkJbrujKsCGurtyIKYXu9-UHUTF8`
 - Production deployment: `AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw`
-- Verified production baseline: Apps Script Version 32
+- Verified production baseline: Apps Script Version 38
+- Verified production commit: `fd8aff1a71cc56617cf87efb451e9a6fa80380ab`
 - Live-write default: disarmed
 
 ## Normal operating path
@@ -68,12 +69,31 @@ Follow [PRODUCTION_RECOVERY.md](PRODUCTION_RECOVERY.md). While a production inci
 - do not create a replacement deployment ID, and
 - do not bypass failed verification.
 
-## Official production checkpoint
+## Verified production checkpoints
 
-The first fully verified GitHub-to-Apps-Script production release completed on July 30, 2026:
+### GitHub-to-Apps-Script baseline — July 30, 2026
 
 - GitHub deployment run: `30603339137`
-- Apps Script production version: `32`
+- Apps Script production version: 32
 - Phase 7 controlled dry run: passed
 - Production review data after dry run: 21 total, 0 pending, 8 approved, 10 hold, 3 rejected
 - Production record changes during dry run: zero
+
+### Phase 10 evidence-driven V2 production — July 31, 2026
+
+- Apps Script production version: 38
+- GitHub commit: `fd8aff1a71cc56617cf87efb451e9a6fa80380ab`
+- Approved execution function: `runApprovedPhase10V2CorrectionProduction`
+- Promotion candidates received: 3
+- Evidence-supported bureau-specific drafts: 5
+- Blocked drafts: 0
+- PDFs created: 5
+- Failed: 0
+- Skipped: 0
+- Ready to print: 5
+- Airtable records updated: 0
+- Letters mailed automatically: 0
+- Original documents and PDFs: preserved
+- Airtable live writes: disarmed
+
+The five generated packets cover Jefferson Capital Systems, LLC for Experian and Equifax, and MDG US INC for Experian, TransUnion, and Equifax. Physical printing, enclosure assembly, signature, certified mailing, and tracking entry remain separate fulfillment steps.
