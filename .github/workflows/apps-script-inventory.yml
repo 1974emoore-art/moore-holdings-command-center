@@ -1,22 +1,33 @@
-name: Apps Script Inventory Audit
+name: Apps Script Source Drift Audit
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "30 13 * * *"
 
 permissions:
   contents: read
+  issues: write
+
+concurrency:
+  group: apps-script-source-drift-audit
+  cancel-in-progress: true
 
 jobs:
   inventory:
     runs-on: ubuntu-latest
+    environment: apps-script-production
     steps:
-      - name: Require authorization
+      - name: Require read-only authorization
         shell: bash
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
         run: |
           set -euo pipefail
-          test -n "$CLASPRC_JSON"
+          if [ -z "$CLASPRC_JSON" ]; then
+            echo "CLASPRC_JSON is not configured; source drift cannot be audited."
+            exit 1
+          fi
 
       - name: Check out repository
         uses: actions/checkout@v4
@@ -26,10 +37,13 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install official Apps Script CLI
-        run: npm install --global @google/clasp
+      - name: Install compatible Apps Script CLI
+        run: |
+          set -euo pipefail
+          npm install --global @google/clasp@4
+          clasp --version
 
-      - name: Prepare protected authorization
+      - name: Prepare protected read-only authorization
         shell: bash
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
@@ -40,29 +54,92 @@ jobs:
           chmod 600 "$AUTH_FILE"
           echo "CLASP_AUTH_FILE=$AUTH_FILE" >> "$GITHUB_ENV"
 
-      - name: Pull production inventory read-only
+      - name: Pull live Apps Script source read-only
         shell: bash
         run: |
           set -euo pipefail
           LIVE_DIR="$RUNNER_TEMP/live-apps-script"
-          mkdir -p "$LIVE_DIR"
+          EXPECTED_DIR="$RUNNER_TEMP/repository-apps-script"
+          mkdir -p "$LIVE_DIR" "$EXPECTED_DIR"
           cp .clasp.json "$LIVE_DIR/.clasp.json"
           (
             cd "$LIVE_DIR"
             clasp -A "$CLASP_AUTH_FILE" pull
-            find . -maxdepth 1 -type f ! -name '.clasp.json' -printf '%f\n' | sort > live-files.txt
           )
-          find . -maxdepth 1 -type f \( -name '*.js' -o -name '*.html' -o -name 'appsscript.json' \) -printf '%f\n' | sort > "$LIVE_DIR/repository-files.txt"
-          echo "LIVE APPS SCRIPT FILES"
-          cat "$LIVE_DIR/live-files.txt"
-          echo "REPOSITORY DEPLOYABLE FILES"
-          cat "$LIVE_DIR/repository-files.txt"
+          find . -maxdepth 1 -type f \( -name '*.js' -o -name '*.html' -o -name 'appsscript.json' \) -exec cp '{}' "$EXPECTED_DIR/" ';'
+          find "$LIVE_DIR" -maxdepth 1 -type f ! -name '.clasp.json' -printf '%f\n' | sort > "$RUNNER_TEMP/live-files.txt"
+          find "$EXPECTED_DIR" -maxdepth 1 -type f -printf '%f\n' | sort > "$RUNNER_TEMP/repository-files.txt"
 
-      - name: Upload inventory report
+      - name: Verify file and content parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIVE_DIR="$RUNNER_TEMP/live-apps-script"
+          EXPECTED_DIR="$RUNNER_TEMP/repository-apps-script"
+          diff -u "$RUNNER_TEMP/repository-files.txt" "$RUNNER_TEMP/live-files.txt" | tee "$RUNNER_TEMP/file-list.diff"
+          diff -ru --exclude='.clasp.json' "$EXPECTED_DIR" "$LIVE_DIR" | tee "$RUNNER_TEMP/source-content.diff"
+          echo "Live Apps Script source exactly matches GitHub main."
+
+      - name: Upload drift evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: apps-script-inventory
+          name: apps-script-source-drift-audit
           path: |
-            ${{ runner.temp }}/live-apps-script/live-files.txt
-            ${{ runner.temp }}/live-apps-script/repository-files.txt
-          retention-days: 7
+            ${{ runner.temp }}/live-files.txt
+            ${{ runner.temp }}/repository-files.txt
+            ${{ runner.temp }}/file-list.diff
+            ${{ runner.temp }}/source-content.diff
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Publish executive drift summary
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo "## Apps Script Source Integrity"
+            echo
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| GitHub main vs live file inventory | Exact match |"
+            echo "| GitHub main vs live file contents | Exact match |"
+            echo "| Production writes | None |"
+            echo
+            echo "Source drift audit completed at $(date -u +'%Y-%m-%d %H:%M:%S UTC')."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open or update source-integrity incident
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INCIDENT_TITLE: "[Production Incident] Apps Script source integrity audit failed"
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          INCIDENT="$(gh issue list --state open --limit 100 --json number,title --jq '.[] | select(.title == env.INCIDENT_TITLE) | .number' | head -1)"
+          BODY="Apps Script source integrity verification failed at $(date -u +'%Y-%m-%d %H:%M:%S UTC').
+
+          Run: $RUN_URL
+
+          Treat GitHub main as authoritative. Do not edit production in the browser or arm Airtable live writes while this incident is open."
+          if [ -n "$INCIDENT" ]; then
+            gh issue comment "$INCIDENT" --body "$BODY"
+          else
+            gh issue create --title "$INCIDENT_TITLE" --body "$BODY"
+          fi
+
+      - name: Record source-integrity recovery
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INCIDENT_TITLE: "[Production Incident] Apps Script source integrity audit failed"
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          INCIDENT="$(gh issue list --state open --limit 100 --json number,title --jq '.[] | select(.title == env.INCIDENT_TITLE) | .number' | head -1)"
+          if [ -n "$INCIDENT" ]; then
+            gh issue close "$INCIDENT" --reason completed --comment "Source integrity recovered. GitHub main and live Apps Script are an exact match. Audit: $RUN_URL"
+          fi
