@@ -188,7 +188,23 @@ function runPhase7FullSequence(options) {
     let writerResult = null;
 
     if (settings.liveMode && settings.approved) {
-      armPhase7WriteAuthorization();
+      if (!isPhase7WriteAuthorizationArmed_()) {
+        summary.stopped = true;
+        summary.stopReason =
+          'Live mode requires separately armed Phase 7 write authorization.';
+        console.log('PHASE 7 FULL SEQUENCE BLOCKED: ' + summary.stopReason);
+
+        return {
+          mode: 'blocked',
+          summary: summary,
+          batchItems: batchItems,
+          reviewQueue: reviewQueue,
+          workflow: workflow,
+          writerPlan: writerPlan,
+          writerResult: null
+        };
+      }
+
       writerResult = executePhase7ReviewWriter();
     }
 
