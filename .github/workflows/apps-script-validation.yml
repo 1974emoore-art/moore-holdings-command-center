@@ -108,3 +108,56 @@ jobs:
 
           console.log('Phase 8 terminal-decision protection verified.');
           NODE
+
+      - name: Verify Phase 10 approval gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const phase10 = fs.readFileSync('Phase10Final.js', 'utf8');
+
+          const requiredControls = [
+            'PHASE10_QUEUE_RESET_CONFIRMATION_CODE',
+            'PHASE10_DECISION_CONFIRMATION_CODE',
+            'PHASE10_TERMINAL_DECISION_OVERRIDE_CODE',
+            'PHASE10_PDF_AUTHORIZATION_TTL_MS',
+            'previewPhase10ApprovedPdfProduction',
+            'armPhase10PdfAuthorization',
+            'disarmPhase10PdfAuthorization',
+            'clearPhase10PdfAuthorization_()',
+            'filesCreated: 0',
+            'airtableRecordsUpdated: 0'
+          ];
+
+          for (const control of requiredControls) {
+            if (!phase10.includes(control)) {
+              throw new Error('Phase 10 approval control is missing: ' + control);
+            }
+          }
+
+          const pdfRunner = phase10.match(
+            /function runPhase10ApprovedPdfProduction\(\) \{[\s\S]*?\n\}/
+          );
+
+          if (
+            !pdfRunner ||
+            !pdfRunner[0].includes('authorization.armed') ||
+            !pdfRunner[0].includes('finally')
+          ) {
+            throw new Error('Phase 10 PDF production is not protected by one-time authorization.');
+          }
+
+          const resetRunner = phase10.match(
+            /function resetAndRegeneratePhase10\([\s\S]*?\n\}/
+          );
+
+          if (
+            !resetRunner ||
+            !resetRunner[0].includes('PHASE10_QUEUE_RESET_CONFIRMATION_CODE')
+          ) {
+            throw new Error('Phase 10 queue reset is not independently protected.');
+          }
+
+          console.log('Phase 10 approval gates verified.');
+          NODE
