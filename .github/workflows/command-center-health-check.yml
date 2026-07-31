@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: command-center-health-check
@@ -106,3 +107,39 @@ jobs:
             echo
             echo "Health check completed at $(date -u +'%Y-%m-%d %H:%M:%S UTC')."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open or update production incident
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INCIDENT_TITLE: "[Production Incident] Command Center health check failed"
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          INCIDENT="$(gh issue list --state open --limit 100 --json number,title --jq '.[] | select(.title == env.INCIDENT_TITLE) | .number' | head -1)"
+          BODY="Production health verification failed at $(date -u +'%Y-%m-%d %H:%M:%S UTC').
+
+          Run: $RUN_URL
+
+          Follow docs/PRODUCTION_RECOVERY.md. Do not enable Airtable live writes while this incident is open."
+          if [ -n "$INCIDENT" ]; then
+            gh issue comment "$INCIDENT" --body "$BODY"
+          else
+            gh issue create --title "$INCIDENT_TITLE" --body "$BODY"
+          fi
+
+      - name: Record recovery and close incident
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INCIDENT_TITLE: "[Production Incident] Command Center health check failed"
+          VERSION: ${{ steps.deployment.outputs.version }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          INCIDENT="$(gh issue list --state open --limit 100 --json number,title --jq '.[] | select(.title == env.INCIDENT_TITLE) | .number' | head -1)"
+          if [ -n "$INCIDENT" ]; then
+            gh issue close "$INCIDENT" --reason completed --comment "Production recovered and verified at Apps Script Version $VERSION. Health run: $RUN_URL"
+          fi
