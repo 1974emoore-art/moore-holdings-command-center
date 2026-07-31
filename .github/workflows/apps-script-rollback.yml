@@ -1,0 +1,135 @@
+name: Apps Script Production Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_version:
+        description: Existing immutable Apps Script version to restore
+        required: true
+        type: string
+      confirmation:
+        description: Type ROLLBACK to authorize the production pointer change
+        required: true
+        type: string
+      reason:
+        description: Executive reason for rollback
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apps-script-production
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: apps-script-production
+    steps:
+      - name: Require explicit rollback authorization
+        shell: bash
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          TARGET_VERSION: ${{ inputs.target_version }}
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          if [ "$CONFIRMATION" != "ROLLBACK" ]; then
+            echo "Rollback refused: confirmation must exactly equal ROLLBACK."
+            exit 1
+          fi
+          if ! printf '%s' "$TARGET_VERSION" | grep -Eq '^[1-9][0-9]*$'; then
+            echo "Rollback refused: target_version must be a positive integer."
+            exit 1
+          fi
+          if [ -z "$CLASPRC_JSON" ]; then
+            echo "Rollback refused: CLASPRC_JSON is not configured."
+            exit 1
+          fi
+
+      - name: Check out protected main
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install compatible Apps Script CLI
+        run: |
+          set -euo pipefail
+          npm install --global @google/clasp@4
+          clasp --version
+
+      - name: Prepare protected authorization
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          AUTH_FILE="$RUNNER_TEMP/clasprc.json"
+          printf '%s' "$CLASPRC_JSON" > "$AUTH_FILE"
+          chmod 600 "$AUTH_FILE"
+          echo "CLASP_AUTH_FILE=$AUTH_FILE" >> "$GITHUB_ENV"
+
+      - name: Verify project mapping
+        run: clasp -A "$CLASP_AUTH_FILE" status
+
+      - name: Verify immutable target version exists
+        shell: bash
+        env:
+          TARGET_VERSION: ${{ inputs.target_version }}
+        run: |
+          set -euo pipefail
+          VERSIONS="$(clasp -A "$CLASP_AUTH_FILE" versions)"
+          printf '%s\n' "$VERSIONS"
+          if ! printf '%s\n' "$VERSIONS" | grep -Eq "^$TARGET_VERSION([[:space:]-]|$)"; then
+            echo "Rollback refused: Apps Script Version $TARGET_VERSION does not exist."
+            exit 1
+          fi
+
+      - name: Point existing production deployment to target version
+        shell: bash
+        env:
+          TARGET_VERSION: ${{ inputs.target_version }}
+          ROLLBACK_REASON: ${{ inputs.reason }}
+          PRODUCTION_DEPLOYMENT_ID: AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw
+        run: |
+          set -euo pipefail
+          clasp -A "$CLASP_AUTH_FILE" redeploy "$PRODUCTION_DEPLOYMENT_ID" --versionNumber "$TARGET_VERSION" --description "ROLLBACK: $ROLLBACK_REASON"
+
+      - name: Verify production rollback
+        shell: bash
+        env:
+          TARGET_VERSION: ${{ inputs.target_version }}
+          PRODUCTION_DEPLOYMENT_ID: AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw
+        run: |
+          set -euo pipefail
+          DEPLOYMENTS="$(clasp -A "$CLASP_AUTH_FILE" deployments)"
+          printf '%s\n' "$DEPLOYMENTS"
+          EXPECTED="$PRODUCTION_DEPLOYMENT_ID @$TARGET_VERSION"
+          if ! printf '%s\n' "$DEPLOYMENTS" | grep -F "$EXPECTED"; then
+            echo "Rollback verification failed: expected $EXPECTED."
+            exit 1
+          fi
+          echo "Production rollback verified at Version $TARGET_VERSION."
+
+      - name: Publish rollback executive summary
+        shell: bash
+        env:
+          TARGET_VERSION: ${{ inputs.target_version }}
+          ROLLBACK_REASON: ${{ inputs.reason }}
+        run: |
+          {
+            echo "## Command Center Production Rollback"
+            echo
+            echo "| Item | Result |"
+            echo "|---|---|"
+            echo "| Target version | $TARGET_VERSION |"
+            echo "| Existing deployment ID | Preserved |"
+            echo "| Production pointer | Verified |"
+            echo "| Airtable writes | Not requested |"
+            echo "| Reason | $ROLLBACK_REASON |"
+          } >> "$GITHUB_STEP_SUMMARY"
