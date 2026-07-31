@@ -351,15 +351,46 @@ function testPhase7ReviewWriterPreflight() {
  * AIRTABLE_REVIEW_TABLE_ID
  * PHASE7_WRITE_AUTHORIZATION = AUTHORIZE_PHASE7_REVIEW_CREATE
  */
-function isPhase7WriteAuthorizationArmed_() {
-  const properties = PropertiesService.getScriptProperties();
+const PHASE7_WRITE_AUTHORIZATION_TTL_MS = 10 * 60 * 1000;
 
-  return (
-    properties.getProperty('PHASE7_WRITE_AUTHORIZATION') ===
-    'AUTHORIZE_PHASE7_REVIEW_CREATE'
-  );
+function clearPhase7WriteAuthorization_() {
+  const properties = PropertiesService.getScriptProperties();
+  properties.deleteProperty('PHASE7_WRITE_AUTHORIZATION');
+  properties.deleteProperty('PHASE7_WRITE_AUTHORIZED_AT');
 }
 
+function getPhase7WriteAuthorizationState_() {
+  const properties = PropertiesService.getScriptProperties();
+  const token = properties.getProperty('PHASE7_WRITE_AUTHORIZATION');
+  const authorizedAtText = properties.getProperty('PHASE7_WRITE_AUTHORIZED_AT');
+  const authorizedAt = Number(authorizedAtText || 0);
+  const ageMs = authorizedAt ? Date.now() - authorizedAt : Number.POSITIVE_INFINITY;
+  const tokenValid = token === 'AUTHORIZE_PHASE7_REVIEW_CREATE';
+  const timestampValid = authorizedAt > 0 && ageMs >= 0;
+  const withinWindow = timestampValid && ageMs <= PHASE7_WRITE_AUTHORIZATION_TTL_MS;
+  const armed = tokenValid && withinWindow;
+
+  if (tokenValid && !armed) {
+    clearPhase7WriteAuthorization_();
+  }
+
+  return {
+    armed: armed,
+    tokenValid: tokenValid,
+    timestampValid: timestampValid,
+    withinWindow: withinWindow,
+    authorizedAt: authorizedAt
+      ? new Date(authorizedAt).toISOString()
+      : '',
+    expiresAt: armed
+      ? new Date(authorizedAt + PHASE7_WRITE_AUTHORIZATION_TTL_MS).toISOString()
+      : ''
+  };
+}
+
+function isPhase7WriteAuthorizationArmed_() {
+  return getPhase7WriteAuthorizationState_().armed;
+}
 
 
 /**
@@ -687,9 +718,7 @@ function executePhase7ReviewWriter() {
       );
     });
   } finally {
-    properties.deleteProperty(
-      'PHASE7_WRITE_AUTHORIZATION'
-    );
+    clearPhase7WriteAuthorization_();
   }
 
   console.log(
@@ -714,14 +743,112 @@ function executePhase7ReviewWriter() {
 }
 
 
+/**
+ * READ-ONLY LIVE RECONCILIATION PREVIEW
+ *
+ * Reports exactly which review records would be created and which
+ * existing records would be preserved. No Airtable write is sent.
+ */
+function previewPhase7LiveReconciliation() {
+  const properties = PropertiesService.getScriptProperties();
+  const baseId = properties.getProperty('AIRTABLE_BASE_ID');
+  const token = properties.getProperty('AIRTABLE_TOKEN');
+  const reviewTableId = properties.getProperty('AIRTABLE_REVIEW_TABLE_ID');
+
+  if (!baseId || !token || !reviewTableId) {
+    throw new Error(
+      'Missing AIRTABLE_BASE_ID, AIRTABLE_TOKEN, or AIRTABLE_REVIEW_TABLE_ID.'
+    );
+  }
+
+  const plan = buildPhase7ReviewWriterPlan_();
+  const url =
+    'https://api.airtable.com/v0/' +
+    baseId +
+    '/' +
+    reviewTableId;
+  const existingRows = fetchExistingPhase7ReviewRows_(url, token);
+  const reconciliation = reconcilePhase7ReviewCreates_(
+    plan.createRecords,
+    existingRows
+  );
+
+  const result = {
+    mode: 'read-only-preview',
+    existingReviewRows: existingRows.length,
+    totalCandidates: plan.createRecords.length,
+    wouldCreate: reconciliation.createRecords.length,
+    wouldPreserve: reconciliation.skippedExisting.length,
+    skippedExisting: reconciliation.skippedExisting,
+    airtableRequestSent: false
+  };
+
+  console.log(
+    'PHASE 7 LIVE RECONCILIATION PREVIEW: ' +
+    JSON.stringify(result)
+  );
+
+  return result;
+}
+
+
+/**
+ * Arms a one-time Phase 7 write window for ten minutes.
+ * Running this function does not write to Airtable.
+ */
 function armPhase7WriteAuthorization() {
   const properties = PropertiesService.getScriptProperties();
+  const authorizedAt = Date.now();
 
   properties.setProperty(
     'PHASE7_WRITE_AUTHORIZATION',
     'AUTHORIZE_PHASE7_REVIEW_CREATE'
   );
+  properties.setProperty(
+    'PHASE7_WRITE_AUTHORIZED_AT',
+    String(authorizedAt)
+  );
 
-  console.log('Phase 7 write authorization armed.');
+  const state = getPhase7WriteAuthorizationState_();
+  console.log(
+    'Phase 7 write authorization armed until ' +
+    state.expiresAt +
+    '.'
+  );
+
+  return state;
 }
 
+
+/**
+ * Explicitly disarms Phase 7 without writing to Airtable.
+ */
+function disarmPhase7WriteAuthorization() {
+  clearPhase7WriteAuthorization_();
+  console.log('Phase 7 write authorization disarmed.');
+  return { armed: false };
+}
+
+
+/**
+ * Controlled no-argument live entry point for the Apps Script runner.
+ * Requires the separately armed, unexpired authorization window.
+ */
+function executeApprovedPhase7LiveRun() {
+  const authorization = getPhase7WriteAuthorizationState_();
+
+  if (!authorization.armed) {
+    throw new Error(
+      'Phase 7 live execution refused: authorization is not armed or has expired.'
+    );
+  }
+
+  try {
+    return runPhase7FullSequence({
+      liveMode: true,
+      approved: true
+    });
+  } finally {
+    clearPhase7WriteAuthorization_();
+  }
+}
