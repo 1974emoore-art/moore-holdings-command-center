@@ -78,5 +78,5 @@ jobs:
         run: >-
           clasp -A "$CLASP_AUTH_FILE" redeploy
           AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw
-          ${{ steps.version.outputs.number }}
-          "$RELEASE_DESCRIPTION"
+          --versionNumber ${{ steps.version.outputs.number }}
+          --description "$RELEASE_DESCRIPTION"
