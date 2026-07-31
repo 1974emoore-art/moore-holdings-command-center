@@ -39,8 +39,11 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install official Apps Script CLI
-        run: npm install --global @google/clasp
+      - name: Install compatible Apps Script CLI
+        run: |
+          set -euo pipefail
+          npm install --global @google/clasp@4
+          clasp --version
 
       - name: Prepare protected authorization
         shell: bash
@@ -80,3 +83,19 @@ jobs:
           AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw
           --versionNumber ${{ steps.version.outputs.number }}
           --description "$RELEASE_DESCRIPTION"
+
+      - name: Verify production deployment version
+        shell: bash
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.number }}
+          PRODUCTION_DEPLOYMENT_ID: AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw
+        run: |
+          set -euo pipefail
+          DEPLOYMENTS="$(clasp -A "$CLASP_AUTH_FILE" deployments)"
+          printf '%s\n' "$DEPLOYMENTS"
+          EXPECTED="$PRODUCTION_DEPLOYMENT_ID @$EXPECTED_VERSION"
+          if ! printf '%s\n' "$DEPLOYMENTS" | grep -F "$EXPECTED"; then
+            echo "Production verification failed: expected $EXPECTED."
+            exit 1
+          fi
+          echo "Production deployment verified at version $EXPECTED_VERSION."
