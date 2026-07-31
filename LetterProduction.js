@@ -2512,6 +2512,16 @@ function collectPhase9BureauIssues_(
           ) || ''
         ).trim(),
 
+      reportingBureaus:
+        Array.isArray(item.reportingBureaus)
+          ? item.reportingBureaus.slice()
+          : [],
+
+      letterEligible:
+        issueText.toLowerCase().indexOf(
+          'not marked as reporting'
+        ) === -1,
+
       bureau: bureau,
 
       type:
@@ -2616,6 +2626,10 @@ function convertPhase9ScannerIssue_(
     issue: {
       bureau: item.bureau,
       accountNumber: String(item.accountNumber || '').trim(),
+      reportingBureaus:
+        Array.isArray(item.reportingBureaus)
+          ? item.reportingBureaus.slice()
+          : [],
       type: item.type,
       reportedValue:
         String(item.reportedValue),
@@ -2675,6 +2689,10 @@ function buildPhase9HeldAccountReview_(
       recordId: item.recordId,
       accountName: item.accountName,
       accountNumber: item.accountNumber,
+      reportingBureaus:
+        Array.isArray(item.reportingBureaus)
+          ? item.reportingBureaus.slice()
+          : [],
       bureau: item.bureau,
       evidenceCandidate:
         converted.ready,
@@ -2775,6 +2793,12 @@ function getPhase9Count_(
 function convertPhase9ScannerIssue_(item) {
   const blockers = [];
 
+  if (item.letterEligible === false) {
+    blockers.push(
+      'Internal bureau-mapping conflict requires source correction before a dispute letter.'
+    );
+  }
+
   const explanation =
     String(
       firstValue_(
@@ -2844,6 +2868,11 @@ function convertPhase9ScannerIssue_(item) {
 
       accountNumber:
         String(item.accountNumber || '').trim(),
+
+      reportingBureaus:
+        Array.isArray(item.reportingBureaus)
+          ? item.reportingBureaus.slice()
+          : [],
 
       type: issueType,
 

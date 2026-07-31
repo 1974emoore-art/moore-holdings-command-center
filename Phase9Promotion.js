@@ -57,6 +57,19 @@ function runPhase9HeldAccountPromotionReview() {
         ) || ''
       ).trim();
 
+    const reportingBureaus =
+      Array.isArray(
+        item && item.reportingBureaus
+      )
+        ? item.reportingBureaus.slice()
+        : (
+            Array.isArray(
+              evidence && evidence.reportingBureaus
+            )
+              ? evidence.reportingBureaus.slice()
+              : []
+          );
+
     const bureau =
       String(
         firstValue_(
@@ -123,6 +136,7 @@ function runPhase9HeldAccountPromotionReview() {
         recordId: recordId,
         accountName: accountName,
         accountNumber: accountNumber,
+        reportingBureaus: reportingBureaus.slice(),
         bureau: bureau,
         previousDecision: 'ON HOLD',
         phase9Decision: 'PROMOTION CANDIDATE',
@@ -137,6 +151,7 @@ function runPhase9HeldAccountPromotionReview() {
         recordId: recordId,
         accountName: accountName,
         accountNumber: accountNumber,
+        reportingBureaus: reportingBureaus.slice(),
         bureau: bureau,
         previousDecision: 'ON HOLD',
         phase9Decision: 'KEEP ON HOLD',

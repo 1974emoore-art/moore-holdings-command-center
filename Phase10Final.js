@@ -27,7 +27,23 @@ candidates.forEach(function(candidate) {
   ).trim();
 
   if (bureauValue.toLowerCase().indexOf("multiple") !== -1) {
-    ["Experian", "TransUnion", "Equifax"].forEach(function(bureauName) {
+    const evidence =
+      candidate && candidate.evidence
+        ? candidate.evidence
+        : {};
+
+    const verifiedBureaus =
+      firstArray_(
+        candidate && candidate.reportingBureaus,
+        evidence && evidence.reportingBureaus
+      ).filter(function(bureauName) {
+        return (
+          ['Experian', 'TransUnion', 'Equifax']
+            .indexOf(String(bureauName || '').trim()) !== -1
+        );
+      });
+
+    verifiedBureaus.forEach(function(bureauName) {
       const splitCandidate = Object.assign({}, candidate);
       splitCandidate.bureau = bureauName;
       expandedCandidates.push(splitCandidate);
@@ -37,7 +53,68 @@ candidates.forEach(function(candidate) {
   }
 });
 
-expandedCandidates.forEach(function(candidate, index) {
+const consolidatedByKey = {};
+
+expandedCandidates.forEach(function(candidate) {
+  const evidence =
+    candidate && candidate.evidence
+      ? candidate.evidence
+      : {};
+
+  const key = [
+    String(candidate.recordId || '').trim(),
+    String(candidate.accountNumber || '').trim(),
+    String(candidate.bureau || '').trim()
+  ].join('|').toLowerCase();
+
+  if (!consolidatedByKey[key]) {
+    consolidatedByKey[key] = {
+      candidate: Object.assign({}, candidate),
+      evidenceItems: []
+    };
+  }
+
+  consolidatedByKey[key].evidenceItems.push(evidence);
+});
+
+const consolidatedCandidates =
+  Object.keys(consolidatedByKey).map(
+    function(key) {
+      const group = consolidatedByKey[key];
+      const types = uniquePhase10Values_(
+        group.evidenceItems.map(function(item) {
+          return item && item.type;
+        })
+      );
+      const explanations = uniquePhase10Values_(
+        group.evidenceItems.map(function(item) {
+          return item && item.explanation;
+        })
+      );
+
+      group.candidate.evidence =
+        Object.assign(
+          {},
+          group.evidenceItems[0] || {},
+          {
+            type:
+              types.length > 1
+                ? 'MULTIPLE_DISCREPANCIES'
+                : (types[0] || ''),
+            explanation:
+              explanations.map(
+                function(value) {
+                  return '- ' + value;
+                }
+              ).join('\n')
+          }
+        );
+
+      return group.candidate;
+    }
+  );
+
+consolidatedCandidates.forEach(function(candidate, index) {
     const evidence =
       candidate && candidate.evidence
         ? candidate.evidence
@@ -1034,11 +1111,11 @@ function runApprovedPhase10V2CorrectionProduction() {
       : [];
 
   if (
-    drafts.length !== 13 ||
+    drafts.length < 1 ||
     blocked.length !== 0
   ) {
     throw new Error(
-      'Phase 10 V2 production refused: expected 13 complete drafts and zero blockers; received ' +
+      'Phase 10 V2 production refused: expected at least one complete evidence-supported draft and zero blockers; received ' +
       drafts.length +
       ' drafts and ' +
       blocked.length +
