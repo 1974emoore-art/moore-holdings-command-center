@@ -60,7 +60,7 @@ jobs:
       - name: Install compatible Apps Script CLI
         run: |
           set -euo pipefail
-          npm install --global @google/clasp@4
+          npm install --global @google/clasp@3.3.0
           clasp --version
 
       - name: Prepare protected authorization
