@@ -361,6 +361,134 @@ function isPhase7WriteAuthorizationArmed_() {
 }
 
 
+
+/**
+ * Builds a stable identity for one review row. This key deliberately
+ * excludes status, stage, and violation so a later classification
+ * cannot create a second task for the same account.
+ */
+function buildPhase7ReviewIdentityKey_(fields) {
+  const source = fields || {};
+  const normalize = function(value) {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+  };
+
+  return [
+    normalize(source['Account Name']),
+    normalize(source['Account Number']) || 'na'
+  ].join('|');
+}
+
+
+/**
+ * Reads all current review rows before a live write. Read-only.
+ */
+function fetchExistingPhase7ReviewRows_(url, token) {
+  const rows = [];
+  let offset = '';
+
+  do {
+    const query = [
+      'pageSize=100',
+      'fields%5B%5D=Account%20Name',
+      'fields%5B%5D=Account%20Number',
+      'fields%5B%5D=Status',
+      'fields%5B%5D=Action%20Stage',
+      'fields%5B%5D=Violation%20Tag'
+    ];
+
+    if (offset) {
+      query.push('offset=' + encodeURIComponent(offset));
+    }
+
+    const response = UrlFetchApp.fetch(
+      url + '?' + query.join('&'),
+      {
+        method: 'get',
+        headers: { Authorization: 'Bearer ' + token },
+        muteHttpExceptions: true
+      }
+    );
+
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+
+    if (responseCode < 200 || responseCode >= 300) {
+      throw new Error(
+        'Unable to inspect existing Phase 7 reviews. HTTP ' +
+        responseCode + ': ' + responseText
+      );
+    }
+
+    const responseData = JSON.parse(responseText);
+
+    (responseData.records || []).forEach(function(record) {
+      rows.push(record);
+    });
+
+    offset = responseData.offset || '';
+  } while (offset);
+
+  return rows;
+}
+
+
+/**
+ * Reconciles candidate creates against Airtable's current state.
+ * Existing human decisions and existing Pending tasks are preserved.
+ */
+function reconcilePhase7ReviewCreates_(createRecords, existingRows) {
+  const existingByKey = {};
+
+  (existingRows || []).forEach(function(record) {
+    const fields = record && record.fields ? record.fields : {};
+    const key = buildPhase7ReviewIdentityKey_(fields);
+
+    if (key !== '|na') {
+      existingByKey[key] = record;
+    }
+  });
+
+  const creates = [];
+  const skipped = [];
+
+  (createRecords || []).forEach(function(record) {
+    const fields = record && record.fields ? record.fields : {};
+    const key = buildPhase7ReviewIdentityKey_(fields);
+    const existing = existingByKey[key];
+
+    if (existing) {
+      skipped.push({
+        reviewKey: key,
+        existingRecordId: existing.id || '',
+        preservedStatus:
+          existing.fields && existing.fields.Status
+            ? existing.fields.Status
+            : 'Pending',
+        classificationChanged: Boolean(
+          existing.fields &&
+          (
+            existing.fields['Action Stage'] !== fields['Action Stage'] ||
+            existing.fields['Violation Tag'] !== fields['Violation Tag']
+          )
+        )
+      });
+      return;
+    }
+
+    creates.push(record);
+    existingByKey[key] = { id: '', fields: fields };
+  });
+
+  return {
+    createRecords: creates,
+    skippedExisting: skipped
+  };
+}
+
+
 function executePhase7ReviewWriter() {
   console.log('PHASE 7 LIVE REVIEW WRITER STARTED');
 
@@ -422,11 +550,31 @@ function executePhase7ReviewWriter() {
     '/' +
     reviewTableId;
 
+  const existingRows =
+    fetchExistingPhase7ReviewRows_(url, token);
+
+  const reconciliation =
+    reconcilePhase7ReviewCreates_(
+      plan.createRecords,
+      existingRows
+    );
+
+  const liveBatches =
+    chunkPhase7ReviewRecords_(
+      reconciliation.createRecords,
+      PHASE7_REVIEW_BATCH_SIZE
+    );
+
   let totalCreated = 0;
   const batchResults = [];
 
+  console.log(
+    'Existing Phase 7 reviews preserved: ' +
+    reconciliation.skippedExisting.length
+  );
+
   try {
-    plan.batches.forEach(function(batch, index) {
+    liveBatches.forEach(function(batch, index) {
       const batchValidation =
         validatePhase7ReviewWriterBatch_(batch);
 
@@ -517,8 +665,11 @@ function executePhase7ReviewWriter() {
   );
 
   return {
-    batchesSubmitted: plan.batches.length,
-    totalRequested: plan.createRecords.length,
+    batchesSubmitted: liveBatches.length,
+    totalCandidates: plan.createRecords.length,
+    totalRequested: reconciliation.createRecords.length,
+    totalSkippedExisting: reconciliation.skippedExisting.length,
+    skippedExisting: reconciliation.skippedExisting,
     totalCreated: totalCreated,
     batchResults: batchResults,
     authorizationCleared: true
