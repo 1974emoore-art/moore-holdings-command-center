@@ -2498,6 +2498,20 @@ function collectPhase9BureauIssues_(
           ) || ''
         ).trim(),
 
+      accountNumber:
+        String(
+          firstValue_(
+            item.accountNumber,
+            item.accountNumberMasked,
+            item.partialAccountNumber,
+            item.accountLastFour,
+            issue.accountNumber,
+            issue.accountNumberMasked,
+            issue.partialAccountNumber,
+            issue.accountLastFour
+          ) || ''
+        ).trim(),
+
       bureau: bureau,
 
       type:
@@ -2601,6 +2615,7 @@ function convertPhase9ScannerIssue_(
     ready: true,
     issue: {
       bureau: item.bureau,
+      accountNumber: String(item.accountNumber || '').trim(),
       type: item.type,
       reportedValue:
         String(item.reportedValue),
@@ -2659,6 +2674,7 @@ function buildPhase9HeldAccountReview_(
     return {
       recordId: item.recordId,
       accountName: item.accountName,
+      accountNumber: item.accountNumber,
       bureau: item.bureau,
       evidenceCandidate:
         converted.ready,
@@ -2825,6 +2841,9 @@ function convertPhase9ScannerIssue_(item) {
 
     issue: {
       bureau: bureau,
+
+      accountNumber:
+        String(item.accountNumber || '').trim(),
 
       type: issueType,
 

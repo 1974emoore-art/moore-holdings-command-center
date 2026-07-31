@@ -45,6 +45,18 @@ function runPhase9HeldAccountPromotionReview() {
         ) || ''
       ).trim();
 
+    const accountNumber =
+      String(
+        firstValue_(
+          item && item.accountNumber,
+          item && item.accountNumberMasked,
+          item && item.partialAccountNumber,
+          item && item.accountLastFour,
+          evidence && evidence.accountNumber,
+          evidence && evidence.partialAccountNumber
+        ) || ''
+      ).trim();
+
     const bureau =
       String(
         firstValue_(
@@ -67,6 +79,12 @@ function runPhase9HeldAccountPromotionReview() {
     if (!accountName) {
       blockers.push(
         'Account name is missing.'
+      );
+    }
+
+    if (!accountNumber) {
+      blockers.push(
+        'Verified partial account number is missing.'
       );
     }
 
@@ -104,6 +122,7 @@ function runPhase9HeldAccountPromotionReview() {
       promotionCandidates.push({
         recordId: recordId,
         accountName: accountName,
+        accountNumber: accountNumber,
         bureau: bureau,
         previousDecision: 'ON HOLD',
         phase9Decision: 'PROMOTION CANDIDATE',
@@ -117,6 +136,7 @@ function runPhase9HeldAccountPromotionReview() {
       remainingOnHold.push({
         recordId: recordId,
         accountName: accountName,
+        accountNumber: accountNumber,
         bureau: bureau,
         previousDecision: 'ON HOLD',
         phase9Decision: 'KEEP ON HOLD',

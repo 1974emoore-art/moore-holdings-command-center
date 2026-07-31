@@ -51,13 +51,16 @@ expandedCandidates.forEach(function(candidate, index) {
       ) || ''
     ).trim();
 
-    const accountName = String(
-      firstValue_(
-        candidate && candidate.accountName,
-        candidate && candidate.account,
-        candidate && candidate.creditorName
-      ) || ''
-    ).trim();
+    const accountName =
+      normalizePhase10AccountName_(
+        String(
+          firstValue_(
+            candidate && candidate.accountName,
+            candidate && candidate.account,
+            candidate && candidate.creditorName
+          ) || ''
+        ).trim()
+      );
 
    const accountNumber = String(
   firstValue_(
@@ -104,6 +107,12 @@ expandedCandidates.forEach(function(candidate, index) {
       blockers.push('Account name is missing.');
     }
 
+    if (!accountNumber) {
+      blockers.push(
+        'Verified partial account number is missing.'
+      );
+    }
+
     if (!bureau) {
       blockers.push('Bureau is missing.');
     }
@@ -117,7 +126,7 @@ expandedCandidates.forEach(function(candidate, index) {
     }
 
     const draftId =
-      'P10-' +
+      'P10V2-' +
       String(index + 1).padStart(3, '0') +
       '-' +
       sanitizePhase10Id_(bureau || 'BUREAU') +
@@ -261,7 +270,7 @@ function buildPhase10LetterBodyV2_(draft) {
       : accountName;
 
   return [
-    'Date: ____________________',
+    'Date: ' + formatPhase10LetterDate_(new Date()),
     '',
     'Ernest Moore Jr.',
     '1116 Western Yarrow Ave',
@@ -294,9 +303,11 @@ function buildPhase10LetterBodyV2_(draft) {
     '______________________________',
     'Ernest Moore Jr.',
     '',
-    'Enclosures:',
-    '- Copy of the relevant credit-report information',
-    '- Supporting documentation, if applicable'
+    'Enclosures to attach before mailing:',
+    '- Copy of government-issued photo identification',
+    '- Copy of proof of current mailing address',
+    '- Copy of the relevant credit-report page',
+    '- Copies of supporting documentation for the disputed item'
   ].join('\n');
 }
 
@@ -359,6 +370,30 @@ function formatPhase10IssueType_(value) {
       return character.toUpperCase();
     }
   );
+}
+
+
+function formatPhase10LetterDate_(dateValue) {
+  return Utilities.formatDate(
+    dateValue,
+    Session.getScriptTimeZone() ||
+      'America/Chicago',
+    'MMMM d, yyyy'
+  );
+}
+
+
+function normalizePhase10AccountName_(value) {
+  const text = String(value || '').trim();
+
+  if (
+    text.toLowerCase() ===
+    'jefferson capitol'
+  ) {
+    return 'Jefferson Capital Systems, LLC';
+  }
+
+  return text;
 }
 
 
@@ -981,6 +1016,55 @@ function runPhase10ApprovedPdfProduction() {
   } finally {
     clearPhase10PdfAuthorization_();
   }
+}
+
+
+function runApprovedPhase10V2CorrectionProduction() {
+  const preview =
+    runPhase10FinalSystemCompletion() || {};
+
+  const drafts =
+    Array.isArray(preview.draftLetters)
+      ? preview.draftLetters
+      : [];
+
+  const blocked =
+    Array.isArray(preview.blockedDraftRecords)
+      ? preview.blockedDraftRecords
+      : [];
+
+  if (
+    drafts.length !== 13 ||
+    blocked.length !== 0
+  ) {
+    throw new Error(
+      'Phase 10 V2 production refused: expected 13 complete drafts and zero blockers; received ' +
+      drafts.length +
+      ' drafts and ' +
+      blocked.length +
+      ' blockers.'
+    );
+  }
+
+  initializePhase10ReviewGate(
+    PHASE10_QUEUE_RESET_CONFIRMATION_CODE
+  );
+
+  getPhase10ReviewQueue().drafts.forEach(
+    function(draft) {
+      savePhase10ReviewDecision(
+        draft.draftId,
+        'APPROVE',
+        'Executive-approved Phase 10 V2 mailing correction.',
+        PHASE10_DECISION_CONFIRMATION_CODE,
+        ''
+      );
+    }
+  );
+
+  armPhase10PdfAuthorization();
+
+  return runPhase10ApprovedPdfProduction();
 }
 
 
