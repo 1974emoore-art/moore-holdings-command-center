@@ -439,6 +439,39 @@ function fetchExistingPhase7ReviewRows_(url, token) {
  * Reconciles candidate creates against Airtable's current state.
  * Existing human decisions and existing Pending tasks are preserved.
  */
+
+function isPhase7TerminalReviewStatus_(status) {
+  return ['Approved', 'Hold', 'Rejected'].indexOf(
+    String(status || '')
+  ) !== -1;
+}
+
+
+function choosePhase7AuthoritativeReview_(current, candidate) {
+  if (!current) {
+    return candidate;
+  }
+
+  const currentFields = current.fields || {};
+  const candidateFields = candidate.fields || {};
+  const currentTerminal =
+    isPhase7TerminalReviewStatus_(currentFields.Status);
+  const candidateTerminal =
+    isPhase7TerminalReviewStatus_(candidateFields.Status);
+
+  if (currentTerminal !== candidateTerminal) {
+    return candidateTerminal ? candidate : current;
+  }
+
+  const currentTime =
+    new Date(current.createdTime || 0).getTime();
+  const candidateTime =
+    new Date(candidate.createdTime || 0).getTime();
+
+  return candidateTime > currentTime ? candidate : current;
+}
+
+
 function reconcilePhase7ReviewCreates_(createRecords, existingRows) {
   const existingByKey = {};
 
@@ -447,7 +480,11 @@ function reconcilePhase7ReviewCreates_(createRecords, existingRows) {
     const key = buildPhase7ReviewIdentityKey_(fields);
 
     if (key !== '|na') {
-      existingByKey[key] = record;
+      existingByKey[key] =
+        choosePhase7AuthoritativeReview_(
+          existingByKey[key],
+          record
+        );
     }
   });
 
