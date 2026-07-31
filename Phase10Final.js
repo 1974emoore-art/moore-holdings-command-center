@@ -342,8 +342,10 @@ function buildPhase10LetterBodyV2_(draft) {
   const accountReference =
     accountNumber
       ? accountName +
-        ' — Account ending ' +
-        getPhase10LastFour_(accountNumber)
+        ' — ' +
+        formatPhase10AccountIdentifier_(
+          accountNumber
+        )
       : accountName;
 
   return [
@@ -471,6 +473,20 @@ function normalizePhase10AccountName_(value) {
   }
 
   return text;
+}
+
+
+function formatPhase10AccountIdentifier_(value) {
+  const raw = String(value || '').trim();
+
+  if (/[xX*•]/.test(raw)) {
+    return 'Account reference ' + raw;
+  }
+
+  return (
+    'Account ending ' +
+    getPhase10LastFour_(raw)
+  );
 }
 
 
