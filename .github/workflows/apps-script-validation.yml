@@ -43,8 +43,29 @@ jobs:
             throw new Error('Phase 7 orchestrator must not arm its own write authorization.');
           }
 
-          if (!writer.includes("properties.deleteProperty(\n      'PHASE7_WRITE_AUTHORIZATION'")) {
-            throw new Error('Phase 7 one-time authorization cleanup is missing.');
+          const requiredWriterControls = [
+            'PHASE7_WRITE_AUTHORIZATION_TTL_MS',
+            'clearPhase7WriteAuthorization_()',
+            "properties.deleteProperty('PHASE7_WRITE_AUTHORIZATION')",
+            "properties.deleteProperty('PHASE7_WRITE_AUTHORIZED_AT')",
+            'previewPhase7LiveReconciliation()',
+            'executeApprovedPhase7LiveRun()',
+            'disarmPhase7WriteAuthorization()',
+            'airtableRequestSent: false'
+          ];
+
+          for (const control of requiredWriterControls) {
+            if (!writer.includes(control)) {
+              throw new Error('Phase 7 safety control is missing: ' + control);
+            }
+          }
+
+          const controlledRun = writer.match(
+            /function executeApprovedPhase7LiveRun\(\) \{[\s\S]*?\n\}/
+          );
+
+          if (!controlledRun || !controlledRun[0].includes('finally')) {
+            throw new Error('Controlled live run must always clear authorization.');
           }
 
           console.log('Phase 7 live-write safety gate verified.');
