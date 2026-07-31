@@ -158,10 +158,26 @@ if (nonAccountCheck.isCandidate) {
     const bureauRecordIssues =
       findBureauIssues_(fields);
 
+    const reportingBureaus = [];
+    if (reportsExperian) {
+      reportingBureaus.push('Experian');
+    }
+    if (reportsTransUnion) {
+      reportingBureaus.push('TransUnion');
+    }
+    if (reportsEquifax) {
+      reportingBureaus.push('Equifax');
+    }
+
     bureauRecordIssues.forEach(function(issue) {
       bureauIssues.push({
         recordId: record.id,
         accountName: accountName,
+        accountNumber:
+          String(fields['Acct #'] || '').trim(),
+        originalCreditor:
+          String(fields['Original Creditor'] || '').trim(),
+        reportingBureaus: reportingBureaus.slice(),
         issue: issue
       });
     });
