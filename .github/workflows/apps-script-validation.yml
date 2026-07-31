@@ -70,3 +70,41 @@ jobs:
 
           console.log('Phase 7 live-write safety gate verified.');
           NODE
+
+      - name: Verify Phase 8 terminal-decision protection
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const phase8 = fs.readFileSync('Phase8_AIReviewLayer.js', 'utf8');
+
+          const requiredControls = [
+            'PHASE8_TERMINAL_OVERRIDE_CODE',
+            'previewPhase8DecisionTransition',
+            'fetchPhase8ReviewRecordById_',
+            'terminalOverrideRequired',
+            'phase7ReviewRecordsChanged: 0',
+            'personalCreditRecordsChanged: false'
+          ];
+
+          for (const control of requiredControls) {
+            if (!phase8.includes(control)) {
+              throw new Error('Phase 8 decision protection is missing: ' + control);
+            }
+          }
+
+          const decisionFunction = phase8.match(
+            /function setPhase8ReviewDecision\([\s\S]*?\n\}/
+          );
+
+          if (
+            !decisionFunction ||
+            !decisionFunction[0].includes('currentIsTerminal') ||
+            !decisionFunction[0].includes('terminalOverrideCode')
+          ) {
+            throw new Error('Phase 8 terminal decisions are not independently protected.');
+          }
+
+          console.log('Phase 8 terminal-decision protection verified.');
+          NODE
