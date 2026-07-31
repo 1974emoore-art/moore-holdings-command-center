@@ -1,0 +1,51 @@
+name: Apps Script Validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            node --check "$file"
+          done < <(find . -type f -name '*.js' -not -path './.git/*' -print0)
+
+      - name: Verify Phase 7 live-write safety gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+
+          const orchestrator = fs.readFileSync('Phase7_BatchProcessor.js', 'utf8');
+          const writer = fs.readFileSync('Phase7_ReviewWriter.gs.js', 'utf8');
+
+          if (!orchestrator.includes('isPhase7WriteAuthorizationArmed_()')) {
+            throw new Error('Phase 7 independent authorization check is missing.');
+          }
+
+          if (orchestrator.includes('armPhase7WriteAuthorization();')) {
+            throw new Error('Phase 7 orchestrator must not arm its own write authorization.');
+          }
+
+          if (!writer.includes("properties.deleteProperty(\n      'PHASE7_WRITE_AUTHORIZATION'")) {
+            throw new Error('Phase 7 one-time authorization cleanup is missing.');
+          }
+
+          console.log('Phase 7 live-write safety gate verified.');
+          NODE
