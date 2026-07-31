@@ -117,3 +117,45 @@ function testPhase7ReconciliationCreatesOnlyNewIdentityOnce() {
     throw new Error('The second candidate should be recorded as skipped.');
   }
 }
+
+
+function testPhase7AuthoritativeSelectionPrefersHumanDecision() {
+  const pending = {
+    id: 'recPending',
+    createdTime: '2026-07-25T05:19:38.000Z',
+    fields: { Status: 'Pending' }
+  };
+  const decided = {
+    id: 'recDecided',
+    createdTime: '2026-07-20T21:55:20.000Z',
+    fields: { Status: 'Hold' }
+  };
+
+  const selected =
+    choosePhase7AuthoritativeReview_(pending, decided);
+
+  if (selected.id !== 'recDecided') {
+    throw new Error('A human decision must outrank a newer Pending row.');
+  }
+}
+
+
+function testPhase7AuthoritativeSelectionUsesNewestTerminalDecision() {
+  const older = {
+    id: 'recOlderHold',
+    createdTime: '2026-07-20T21:55:20.000Z',
+    fields: { Status: 'Hold' }
+  };
+  const newer = {
+    id: 'recNewerApproved',
+    createdTime: '2026-07-25T05:19:38.000Z',
+    fields: { Status: 'Approved' }
+  };
+
+  const selected =
+    choosePhase7AuthoritativeReview_(older, newer);
+
+  if (selected.id !== 'recNewerApproved') {
+    throw new Error('The newest terminal human decision must win.');
+  }
+}
