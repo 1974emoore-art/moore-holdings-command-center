@@ -28,6 +28,9 @@ const PHASE8_ALLOWED_DECISIONS = [
   'Hold'
 ];
 
+const PHASE8_TERMINAL_OVERRIDE_CODE =
+  'ERNEST_APPROVES_TERMINAL_DECISION_CHANGE';
+
 
 /**
  * Main read-only Phase 8 test.
@@ -456,7 +459,8 @@ function validatePhase8AIReviewLayer_(reviews) {
 function setPhase8ReviewDecision(
   recordId,
   decision,
-  confirmationCode
+  confirmationCode,
+  terminalOverrideCode
 ) {
   if (
     confirmationCode !== PHASE8_CONFIRMATION_CODE
@@ -481,6 +485,44 @@ function setPhase8ReviewDecision(
   }
 
   const config = getPhase8Config_();
+  const currentRecord =
+    fetchPhase8ReviewRecordById_(recordId, config);
+  const currentDecision =
+    normalizePhase8Decision_(
+      currentRecord.fields &&
+      currentRecord.fields.Status
+    );
+  const decisionChanged =
+    currentDecision !== decision;
+  const currentIsTerminal =
+    PHASE8_ALLOWED_DECISIONS.indexOf(
+      currentDecision
+    ) !== -1;
+
+  if (
+    currentIsTerminal &&
+    decisionChanged &&
+    terminalOverrideCode !==
+      PHASE8_TERMINAL_OVERRIDE_CODE
+  ) {
+    throw new Error(
+      'Existing ' +
+      currentDecision +
+      ' decision is protected. A separate terminal-decision override is required.'
+    );
+  }
+
+  if (!decisionChanged) {
+    return {
+      success: true,
+      recordId: recordId,
+      previousDecision: currentDecision,
+      decision: decision,
+      noChange: true,
+      phase7ReviewRecordsChanged: 0,
+      personalCreditRecordsChanged: false
+    };
+  }
 
   const url =
     'https://api.airtable.com/v0/' +
@@ -526,9 +568,105 @@ function setPhase8ReviewDecision(
   return {
     success: true,
     recordId: recordId,
+    previousDecision: currentDecision,
     decision: decision,
+    noChange: false,
+    phase7ReviewRecordsChanged: 1,
     personalCreditRecordsChanged: false
   };
+}
+
+
+/**
+ * Read-only preview for a proposed Phase 8 decision transition.
+ */
+function previewPhase8DecisionTransition(
+  recordId,
+  decision
+) {
+  if (!recordId) {
+    throw new Error(
+      'Airtable review record ID is required.'
+    );
+  }
+
+  if (
+    PHASE8_ALLOWED_DECISIONS.indexOf(decision) === -1
+  ) {
+    throw new Error(
+      'Decision must be Approved, Rejected, or Hold.'
+    );
+  }
+
+  const config = getPhase8Config_();
+  const currentRecord =
+    fetchPhase8ReviewRecordById_(recordId, config);
+  const currentDecision =
+    normalizePhase8Decision_(
+      currentRecord.fields &&
+      currentRecord.fields.Status
+    );
+  const currentIsTerminal =
+    PHASE8_ALLOWED_DECISIONS.indexOf(
+      currentDecision
+    ) !== -1;
+  const decisionChanged =
+    currentDecision !== decision;
+
+  return {
+    mode: 'read-only-preview',
+    recordId: recordId,
+    currentDecision: currentDecision,
+    proposedDecision: decision,
+    noChange: !decisionChanged,
+    terminalOverrideRequired:
+      currentIsTerminal && decisionChanged,
+    airtableRequestSent: false
+  };
+}
+
+
+/**
+ * Reads one Phase 7 Review record by ID. Read-only.
+ */
+function fetchPhase8ReviewRecordById_(
+  recordId,
+  config
+) {
+  const url =
+    'https://api.airtable.com/v0/' +
+    config.baseId +
+    '/' +
+    config.reviewTableId +
+    '/' +
+    recordId;
+
+  const response = UrlFetchApp.fetch(url, {
+    method: 'get',
+    headers: {
+      Authorization: 'Bearer ' + config.token
+    },
+    muteHttpExceptions: true
+  });
+
+  const responseCode =
+    response.getResponseCode();
+  const responseText =
+    response.getContentText();
+
+  if (
+    responseCode < 200 ||
+    responseCode >= 300
+  ) {
+    throw new Error(
+      'Phase 8 review read failed with HTTP ' +
+      responseCode +
+      ': ' +
+      responseText
+    );
+  }
+
+  return JSON.parse(responseText);
 }
 
 
