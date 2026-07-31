@@ -1,0 +1,68 @@
+name: Apps Script Inventory Audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require authorization
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$CLASPRC_JSON"
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install official Apps Script CLI
+        run: npm install --global @google/clasp
+
+      - name: Prepare protected authorization
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          AUTH_FILE="$RUNNER_TEMP/clasprc.json"
+          printf '%s' "$CLASPRC_JSON" > "$AUTH_FILE"
+          chmod 600 "$AUTH_FILE"
+          echo "CLASP_AUTH_FILE=$AUTH_FILE" >> "$GITHUB_ENV"
+
+      - name: Pull production inventory read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIVE_DIR="$RUNNER_TEMP/live-apps-script"
+          mkdir -p "$LIVE_DIR"
+          cp .clasp.json "$LIVE_DIR/.clasp.json"
+          (
+            cd "$LIVE_DIR"
+            clasp -A "$CLASP_AUTH_FILE" pull
+            find . -maxdepth 1 -type f ! -name '.clasp.json' -printf '%f\n' | sort > live-files.txt
+          )
+          find . -maxdepth 1 -type f \( -name '*.js' -o -name '*.html' -o -name 'appsscript.json' \) -printf '%f\n' | sort > "$LIVE_DIR/repository-files.txt"
+          echo "LIVE APPS SCRIPT FILES"
+          cat "$LIVE_DIR/live-files.txt"
+          echo "REPOSITORY DEPLOYABLE FILES"
+          cat "$LIVE_DIR/repository-files.txt"
+
+      - name: Upload inventory report
+        uses: actions/upload-artifact@v4
+        with:
+          name: apps-script-inventory
+          path: |
+            ${{ runner.temp }}/live-apps-script/live-files.txt
+            ${{ runner.temp }}/live-apps-script/repository-files.txt
+          retention-days: 7
