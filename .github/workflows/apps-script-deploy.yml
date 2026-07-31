@@ -7,9 +7,12 @@ on:
         description: Deployment description
         required: true
         default: Controlled Command Center production release
+  issues:
+    types: [opened]
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: apps-script-production
@@ -17,6 +20,13 @@ concurrency:
 
 jobs:
   deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'issues' &&
+        github.event.issue.user.login == github.repository_owner &&
+        startsWith(github.event.issue.title, '[Approved Production Deploy]')
+      )
     runs-on: ubuntu-latest
     environment: apps-script-production
     steps:
@@ -66,7 +76,7 @@ jobs:
         id: version
         shell: bash
         env:
-          RELEASE_DESCRIPTION: ${{ inputs.description }}
+          RELEASE_DESCRIPTION: ${{ github.event_name == 'workflow_dispatch' && inputs.description || github.event.issue.title }}
         run: |
           set -euo pipefail
           OUTPUT="$(clasp -A "$CLASP_AUTH_FILE" version "$RELEASE_DESCRIPTION")"
@@ -77,7 +87,7 @@ jobs:
 
       - name: Update existing production deployment
         env:
-          RELEASE_DESCRIPTION: ${{ inputs.description }}
+          RELEASE_DESCRIPTION: ${{ github.event_name == 'workflow_dispatch' && inputs.description || github.event.issue.title }}
         run: >-
           clasp -A "$CLASP_AUTH_FILE" redeploy
           AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw
@@ -99,3 +109,26 @@ jobs:
             exit 1
           fi
           echo "Production deployment verified at version $EXPECTED_VERSION."
+
+      - name: Record approved deployment success
+        if: ${{ success() && github.event_name == 'issues' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          VERSION: ${{ steps.version.outputs.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh issue close "$ISSUE_NUMBER" --reason completed --comment "Production deployment verified at Apps Script Version $VERSION. Run: $RUN_URL"
+
+      - name: Record approved deployment failure
+        if: ${{ failure() && github.event_name == 'issues' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --body "Production deployment stopped safely. No success was recorded. Inspect: $RUN_URL"
