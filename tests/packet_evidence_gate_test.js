@@ -6,7 +6,8 @@ function testPacketEvidenceGateAllowsExactBureauAndReferenceMatch() {
       {
         bureau: 'Experian',
         accountReference: 'XXXX1234',
-        reported: true
+        reported: true,
+        sourcePage: 12
       }
     ]
   });
@@ -24,7 +25,8 @@ function testPacketEvidenceGateBlocksWrongBureau() {
       {
         bureau: 'Experian',
         accountReference: 'XXXX1234',
-        reported: true
+        reported: true,
+        sourcePage: 12
       }
     ]
   });
@@ -42,7 +44,8 @@ function testPacketEvidenceGateBlocksDifferentReference() {
       {
         bureau: 'Equifax',
         accountReference: 'XXXX9876',
-        reported: true
+        reported: true,
+        sourcePage: 12
       }
     ]
   });
@@ -60,7 +63,8 @@ function testPacketEvidenceGateRejectsInsufficientVisibleSuffix() {
       {
         bureau: 'Experian',
         accountReference: 'XXX',
-        reported: true
+        reported: true,
+        sourcePage: 12
       }
     ]
   });
@@ -78,7 +82,8 @@ function testPacketEvidenceGateRequiresReportedTrue() {
       {
         bureau: 'TransUnion',
         accountReference: 'XXXX1234',
-        reported: false
+        reported: false,
+        sourcePage: 12
       }
     ]
   });
@@ -99,5 +104,62 @@ function testPacketEvidenceGateHasNoSideEffects() {
     result.mailingStatusChanged !== false
   ) {
     throw new Error('Packet evidence assessment must remain read-only.');
+  }
+}
+
+
+function testPacketEvidenceGateRequiresSourcePage() {
+  const result = assessPacketEvidence({
+    bureau: 'Experian',
+    accountReference: 'XXXX1234',
+    sourceEntries: [{
+      bureau: 'Experian',
+      accountReference: 'XXXX1234',
+      reported: true
+    }]
+  });
+
+  if (result.status !== 'BLOCKED_EVIDENCE_MISMATCH') {
+    throw new Error('A matching entry without a source page must not pass.');
+  }
+}
+
+function testPacketEvidenceGateRejectsLowConfidenceParserEntry() {
+  const result = assessPacketEvidence({
+    bureau: 'Equifax',
+    accountReference: 'XXXX1234',
+    sourceEntries: [{
+      bureau: 'Equifax',
+      accountReference: 'XXXX1234',
+      reported: true,
+      sourcePage: 21,
+      source: 'LIVE_CREDIT_REPORT_PARSER',
+      sectionFound: true,
+      parserConfidence: 'LOW'
+    }]
+  });
+
+  if (result.status !== 'BLOCKED_EVIDENCE_MISMATCH') {
+    throw new Error('Low-confidence parser evidence must not pass.');
+  }
+}
+
+function testPacketEvidenceGateAllowsReliableParserEntry() {
+  const result = assessPacketEvidence({
+    bureau: 'Equifax',
+    accountReference: 'XXXX1234',
+    sourceEntries: [{
+      bureau: 'Equifax',
+      accountReference: 'XXXX1234',
+      reported: true,
+      sourcePage: 21,
+      source: 'LIVE_CREDIT_REPORT_PARSER',
+      sectionFound: true,
+      parserConfidence: 'HIGH'
+    }]
+  });
+
+  if (result.status !== 'READY_FOR_PHYSICAL_REVIEW') {
+    throw new Error('Reliable parser evidence with a source page should pass.');
   }
 }

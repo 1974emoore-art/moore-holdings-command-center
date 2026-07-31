@@ -6,7 +6,7 @@
  * Read-only: this module cannot create files, send messages, or update Airtable.
  */
 
-const PACKET_EVIDENCE_GATE_VERSION = '1.0.0';
+const PACKET_EVIDENCE_GATE_VERSION = '1.1.0';
 
 function assessPacketEvidence(packet) {
   packet = packet || {};
@@ -30,6 +30,8 @@ function assessPacketEvidence(packet) {
       normalizePacketEvidenceValue_(entry && entry.bureau) === bureau &&
       entry &&
       entry.reported === true &&
+      hasValidPacketSourcePage_(entry.sourcePage) &&
+      hasReliablePacketSourceEvidence_(entry) &&
       packetReferencesMatch_(
         accountReference,
         normalizePacketReference_(entry.accountReference)
@@ -39,7 +41,7 @@ function assessPacketEvidence(packet) {
 
   if (sourceEntries.length > 0 && exactMatches.length === 0) {
     blockers.push(
-      'No source-report entry matches both the target bureau and account reference.'
+      'No reliable source-report page matches both the target bureau and account reference.'
     );
   }
 
@@ -58,6 +60,21 @@ function assessPacketEvidence(packet) {
     messagesSent: 0,
     mailingStatusChanged: false
   };
+}
+
+function hasValidPacketSourcePage_(value) {
+  const page = Number(value);
+  return Number.isFinite(page) && page >= 1;
+}
+
+function hasReliablePacketSourceEvidence_(entry) {
+  if (!entry || entry.source !== 'LIVE_CREDIT_REPORT_PARSER') return true;
+
+  const confidence = String(entry.parserConfidence || '').toUpperCase();
+  return (
+    entry.sectionFound === true &&
+    (confidence === 'MEDIUM' || confidence === 'HIGH')
+  );
 }
 
 function packetReferencesMatch_(left, right) {
