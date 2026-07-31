@@ -17,3 +17,23 @@ function testPhase7OrchestrationLiveModeRequiresApproval() {
     throw new Error('Live mode should be blocked without approval.');
   }
 }
+
+function testPhase7OrchestrationApprovedLiveModeRequiresSeparateAuthorization() {
+  const properties = PropertiesService.getScriptProperties();
+  properties.deleteProperty('PHASE7_WRITE_AUTHORIZATION');
+
+  const result = runPhase7FullSequence({
+    liveMode: true,
+    approved: true
+  });
+
+  if (!result || result.mode !== 'blocked') {
+    throw new Error(
+      'Approved live mode must remain blocked until authorization is separately armed.'
+    );
+  }
+
+  if (!result.summary || result.summary.completed) {
+    throw new Error('Blocked live mode must not report completion.');
+  }
+}
