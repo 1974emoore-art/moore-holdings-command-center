@@ -161,3 +161,35 @@ jobs:
 
           console.log('Phase 10 approval gates verified.');
           NODE
+
+      - name: Enforce Phase 9 read-only boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const phase9 = fs.readFileSync('Phase9Promotion.js', 'utf8');
+
+          const forbiddenPatterns = [
+            /method\s*:\s*['"]post['"]/i,
+            /method\s*:\s*['"]patch['"]/i,
+            /method\s*:\s*['"]put['"]/i,
+            /method\s*:\s*['"]delete['"]/i,
+            /DocumentApp\.create\s*\(/,
+            /createFile\s*\(/,
+            /setPhase8ReviewDecision\s*\(/,
+            /createPhase10ApprovedPdfs_\s*\(/
+          ];
+
+          for (const pattern of forbiddenPatterns) {
+            if (pattern.test(phase9)) {
+              throw new Error('Phase 9 read-only boundary violated by: ' + pattern);
+            }
+          }
+
+          if (!phase9.includes('lettersMailed: 0')) {
+            throw new Error('Phase 9 must explicitly report zero mailed letters.');
+          }
+
+          console.log('Phase 9 read-only boundary verified.');
+          NODE
