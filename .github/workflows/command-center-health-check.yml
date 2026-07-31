@@ -1,0 +1,108 @@
+name: Command Center Production Health Check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 13 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: command-center-health-check
+  cancel-in-progress: true
+
+jobs:
+  production-health:
+    runs-on: ubuntu-latest
+    environment: apps-script-production
+    steps:
+      - name: Require read-only authorization
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CLASPRC_JSON" ]; then
+            echo "CLASPRC_JSON is not configured; health check cannot verify Apps Script."
+            exit 1
+          fi
+
+      - name: Check out command center
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install compatible Apps Script CLI
+        run: |
+          set -euo pipefail
+          npm install --global @google/clasp@4
+          clasp --version
+
+      - name: Prepare protected read-only authorization
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          AUTH_FILE="$RUNNER_TEMP/clasprc.json"
+          printf '%s' "$CLASPRC_JSON" > "$AUTH_FILE"
+          chmod 600 "$AUTH_FILE"
+          echo "CLASP_AUTH_FILE=$AUTH_FILE" >> "$GITHUB_ENV"
+
+      - name: Verify Apps Script project mapping
+        run: clasp -A "$CLASP_AUTH_FILE" status
+
+      - name: Verify production deployment
+        id: deployment
+        shell: bash
+        env:
+          PRODUCTION_DEPLOYMENT_ID: AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw
+        run: |
+          set -euo pipefail
+          DEPLOYMENTS="$(clasp -A "$CLASP_AUTH_FILE" deployments)"
+          printf '%s\n' "$DEPLOYMENTS"
+          DEPLOYMENT_LINE="$(printf '%s\n' "$DEPLOYMENTS" | grep -F "$PRODUCTION_DEPLOYMENT_ID")"
+          VERSION="$(printf '%s\n' "$DEPLOYMENT_LINE" | sed -n 's/.*@\([0-9][0-9]*\).*/\1/p')"
+          if [ -z "$VERSION" ]; then
+            echo "Production deployment exists but its immutable version could not be verified."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Verify live dashboard
+        id: dashboard
+        shell: bash
+        env:
+          DASHBOARD_URL: https://script.google.com/macros/s/AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw/exec
+        run: |
+          set -euo pipefail
+          HTTP_STATUS="$(curl --location --silent --show-error --output "$RUNNER_TEMP/dashboard.html" --write-out '%{http_code}' "$DASHBOARD_URL")"
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "Live dashboard returned HTTP $HTTP_STATUS."
+            exit 1
+          fi
+          echo "http_status=$HTTP_STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Publish executive health summary
+        shell: bash
+        env:
+          VERSION: ${{ steps.deployment.outputs.version }}
+          HTTP_STATUS: ${{ steps.dashboard.outputs.http_status }}
+        run: |
+          {
+            echo "## Moore Holdings AI Command Center"
+            echo
+            echo "| Production check | Result |"
+            echo "|---|---|"
+            echo "| Repository source | Available |"
+            echo "| Apps Script mapping | Verified |"
+            echo "| Production deployment | Version $VERSION |"
+            echo "| Live dashboard | Online — HTTP $HTTP_STATUS |"
+            echo "| Airtable writes | Not requested |"
+            echo
+            echo "Health check completed at $(date -u +'%Y-%m-%d %H:%M:%S UTC')."
+          } >> "$GITHUB_STEP_SUMMARY"
