@@ -351,6 +351,16 @@ function testPhase7ReviewWriterPreflight() {
  * AIRTABLE_REVIEW_TABLE_ID
  * PHASE7_WRITE_AUTHORIZATION = AUTHORIZE_PHASE7_REVIEW_CREATE
  */
+function isPhase7WriteAuthorizationArmed_() {
+  const properties = PropertiesService.getScriptProperties();
+
+  return (
+    properties.getProperty('PHASE7_WRITE_AUTHORIZATION') ===
+    'AUTHORIZE_PHASE7_REVIEW_CREATE'
+  );
+}
+
+
 function executePhase7ReviewWriter() {
   console.log('PHASE 7 LIVE REVIEW WRITER STARTED');
 
