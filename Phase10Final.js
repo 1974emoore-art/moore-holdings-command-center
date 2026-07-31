@@ -202,6 +202,29 @@ consolidatedCandidates.forEach(function(candidate, index) {
       blockers.push('Evidence explanation is missing.');
     }
 
+    const packetSourceEntries =
+      buildPhase10PacketSourceEntries_(candidate, evidence);
+
+    const packetEvidenceAssessment =
+      assessPacketEvidence({
+        bureau: bureau,
+        accountReference: accountNumber,
+        sourceEntries: packetSourceEntries
+      });
+
+    if (
+      packetEvidenceAssessment.status !==
+      'READY_FOR_PHYSICAL_REVIEW'
+    ) {
+      packetEvidenceAssessment.blockers.forEach(
+        function(blocker) {
+          blockers.push(
+            'Packet evidence gate: ' + blocker
+          );
+        }
+      );
+    }
+
     const draftId =
       'P10V2-' +
       String(index + 1).padStart(3, '0') +
@@ -218,6 +241,8 @@ consolidatedCandidates.forEach(function(candidate, index) {
         bureau: bureau,
         status: 'BLOCKED',
         blockers: uniquePhase10Values_(blockers),
+        packetEvidenceAssessment:
+          packetEvidenceAssessment,
         airtableUpdated: false,
         pdfCreated: false
       });
@@ -248,6 +273,8 @@ consolidatedCandidates.forEach(function(candidate, index) {
       bureau: bureau,
       issueType: issueType,
       evidenceExplanation: explanation,
+      packetEvidenceAssessment:
+        packetEvidenceAssessment,
       subject: subject,
       letterBody: letterBody,
       status: 'AWAITING ERNIE APPROVAL',
@@ -313,6 +340,53 @@ consolidatedCandidates.forEach(function(candidate, index) {
   console.log('PHASE 10 FINAL SYSTEM COMPLETION COMPLETED');
 
   return report;
+}
+
+
+function buildPhase10PacketSourceEntries_(candidate, evidence) {
+  const candidates = [
+    candidate && candidate.sourceEntries,
+    candidate && candidate.reportEntries,
+    candidate && candidate.bureauEvidence,
+    evidence && evidence.sourceEntries,
+    evidence && evidence.reportEntries,
+    evidence && evidence.bureauEvidence
+  ];
+
+  for (let index = 0; index < candidates.length; index += 1) {
+    if (Array.isArray(candidates[index])) {
+      return candidates[index].map(
+        function(entry) {
+          return {
+            bureau: String(
+              firstValue_(
+                entry && entry.bureau,
+                entry && entry.creditBureau
+              ) || ''
+            ).trim(),
+            accountReference: String(
+              firstValue_(
+                entry && entry.accountReference,
+                entry && entry.accountNumber,
+                entry && entry.accountNumberMasked,
+                entry && entry.partialAccountNumber
+              ) || ''
+            ).trim(),
+            reported:
+              entry &&
+              (
+                entry.reported === true ||
+                String(entry.reportingStatus || '')
+                  .trim()
+                  .toLowerCase() === 'reported'
+              )
+          };
+        }
+      );
+    }
+  }
+
+  return [];
 }
 
 
