@@ -1,0 +1,82 @@
+name: Apps Script Production Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      description:
+        description: Deployment description
+        required: true
+        default: Controlled Command Center production release
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apps-script-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: apps-script-production
+    steps:
+      - name: Require deployment authorization
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CLASPRC_JSON" ]; then
+            echo "CLASPRC_JSON is not configured; refusing production deployment."
+            exit 1
+          fi
+
+      - name: Check out validated main
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install official Apps Script CLI
+        run: npm install --global @google/clasp
+
+      - name: Prepare protected authorization
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          AUTH_FILE="$RUNNER_TEMP/clasprc.json"
+          printf '%s' "$CLASPRC_JSON" > "$AUTH_FILE"
+          chmod 600 "$AUTH_FILE"
+          echo "CLASP_AUTH_FILE=$AUTH_FILE" >> "$GITHUB_ENV"
+
+      - name: Verify project mapping
+        run: clasp -A "$CLASP_AUTH_FILE" status
+
+      - name: Push exact repository source
+        run: clasp -A "$CLASP_AUTH_FILE" push --force
+
+      - name: Create immutable Apps Script version
+        id: version
+        shell: bash
+        env:
+          RELEASE_DESCRIPTION: ${{ inputs.description }}
+        run: |
+          set -euo pipefail
+          OUTPUT="$(clasp -A "$CLASP_AUTH_FILE" version "$RELEASE_DESCRIPTION")"
+          printf '%s\n' "$OUTPUT"
+          VERSION="$(printf '%s\n' "$OUTPUT" | grep -Eo '[0-9]+' | tail -1)"
+          test -n "$VERSION"
+          echo "number=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Update existing production deployment
+        env:
+          RELEASE_DESCRIPTION: ${{ inputs.description }}
+        run: >-
+          clasp -A "$CLASP_AUTH_FILE" redeploy
+          AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw
+          ${{ steps.version.outputs.number }}
+          "$RELEASE_DESCRIPTION"
