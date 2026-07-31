@@ -410,8 +410,19 @@ function uniquePhase10Values_(values) {
 const PHASE10_REVIEW_INDEX_KEY =
   'PHASE10_REVIEW_INDEX';
 
+const PHASE10_QUEUE_RESET_CONFIRMATION_CODE =
+  'ERNEST_APPROVES_PHASE10_QUEUE_RESET';
 
-function initializePhase10ReviewGate() {
+const PHASE10_DECISION_CONFIRMATION_CODE =
+  'ERNEST_APPROVES_PHASE10_REVIEW_DECISION';
+
+const PHASE10_TERMINAL_DECISION_OVERRIDE_CODE =
+  'ERNEST_APPROVES_PHASE10_TERMINAL_DECISION_CHANGE';
+
+
+function initializePhase10ReviewGate(
+  resetConfirmationCode
+) {
   console.log(
     'PHASE 10 REVIEW GATE INITIALIZATION STARTED'
   );
@@ -427,9 +438,24 @@ function initializePhase10ReviewGate() {
   const properties =
     PropertiesService.getScriptProperties();
 
-  clearExistingPhase10ReviewQueue_(
-    properties
-  );
+  const existingIndex =
+    readPhase10ReviewIndex_(properties);
+
+  if (
+    existingIndex.length > 0 &&
+    resetConfirmationCode !==
+      PHASE10_QUEUE_RESET_CONFIRMATION_CODE
+  ) {
+    throw new Error(
+      'Phase 10 review queue already exists. Separate queue-reset approval is required.'
+    );
+  }
+
+  if (existingIndex.length > 0) {
+    clearExistingPhase10ReviewQueue_(
+      properties
+    );
+  }
 
   const reviewIndex = [];
 
@@ -580,8 +606,19 @@ function getPhase10ReviewQueue() {
 function savePhase10ReviewDecision(
   draftId,
   decision,
-  decisionNote
+  decisionNote,
+  confirmationCode,
+  terminalOverrideCode
 ) {
+  if (
+    confirmationCode !==
+    PHASE10_DECISION_CONFIRMATION_CODE
+  ) {
+    throw new Error(
+      'Ernest approval confirmation is required before saving a Phase 10 decision.'
+    );
+  }
+
   const normalizedDraftId =
     String(draftId || '').trim();
 
@@ -632,6 +669,35 @@ function savePhase10ReviewDecision(
 
   const draft =
     JSON.parse(savedValue);
+
+  const existingDecision =
+    String(
+      draft.approvalDecision || ''
+    ).trim().toUpperCase();
+
+  const existingIsTerminal =
+    allowedDecisions.indexOf(
+      existingDecision
+    ) !== -1;
+
+  if (
+    existingIsTerminal &&
+    existingDecision !== normalizedDecision &&
+    terminalOverrideCode !==
+      PHASE10_TERMINAL_DECISION_OVERRIDE_CODE
+  ) {
+    throw new Error(
+      'Existing Phase 10 decision is protected. Separate terminal-decision override approval is required.'
+    );
+  }
+
+  if (existingDecision === normalizedDecision) {
+    return {
+      completed: true,
+      noChange: true,
+      draft: draft
+    };
+  }
 
   draft.approvalDecision =
     normalizedDecision;
@@ -743,7 +809,18 @@ function createPhase10StorageKey_(
     sanitizePhase10Id_(draftId)
   );
 }
-function resetAndRegeneratePhase10() {
+function resetAndRegeneratePhase10(
+  confirmationCode
+) {
+  if (
+    confirmationCode !==
+    PHASE10_QUEUE_RESET_CONFIRMATION_CODE
+  ) {
+    throw new Error(
+      'Ernest approval is required before resetting the Phase 10 queue.'
+    );
+  }
+
   const properties =
     PropertiesService.getScriptProperties();
 
@@ -764,11 +841,146 @@ function resetAndRegeneratePhase10() {
 const PHASE10_PDF_CONFIRMATION_CODE =
   'ERNEST_APPROVES_PHASE10_PDF_BUILD';
 
+const PHASE10_PDF_AUTHORIZATION_TTL_MS =
+  10 * 60 * 1000;
 
-function runPhase10ApprovedPdfProduction() {
-  return createPhase10ApprovedPdfs_(
+
+function clearPhase10PdfAuthorization_() {
+  const properties =
+    PropertiesService.getScriptProperties();
+
+  properties.deleteProperty(
+    'PHASE10_PDF_AUTHORIZATION'
+  );
+  properties.deleteProperty(
+    'PHASE10_PDF_AUTHORIZED_AT'
+  );
+}
+
+
+function getPhase10PdfAuthorizationState_() {
+  const properties =
+    PropertiesService.getScriptProperties();
+
+  const token =
+    properties.getProperty(
+      'PHASE10_PDF_AUTHORIZATION'
+    );
+
+  const authorizedAt =
+    Number(
+      properties.getProperty(
+        'PHASE10_PDF_AUTHORIZED_AT'
+      ) || 0
+    );
+
+  const ageMs =
+    authorizedAt
+      ? Date.now() - authorizedAt
+      : Number.POSITIVE_INFINITY;
+
+  const armed =
+    token === PHASE10_PDF_CONFIRMATION_CODE &&
+    authorizedAt > 0 &&
+    ageMs >= 0 &&
+    ageMs <= PHASE10_PDF_AUTHORIZATION_TTL_MS;
+
+  if (token && !armed) {
+    clearPhase10PdfAuthorization_();
+  }
+
+  return {
+    armed: armed,
+    authorizedAt:
+      authorizedAt
+        ? new Date(authorizedAt).toISOString()
+        : '',
+    expiresAt:
+      armed
+        ? new Date(
+            authorizedAt +
+            PHASE10_PDF_AUTHORIZATION_TTL_MS
+          ).toISOString()
+        : ''
+  };
+}
+
+
+/**
+ * Read-only preview of approved drafts eligible for PDF creation.
+ */
+function previewPhase10ApprovedPdfProduction() {
+  const queue =
+    getPhase10ReviewQueue();
+
+  const approved =
+    queue.drafts.filter(
+      function(draft) {
+        return (
+          draft.approvalDecision === 'APPROVE' &&
+          !draft.pdfCreated
+        );
+      }
+    );
+
+  return {
+    mode: 'read-only-preview',
+    totalDrafts: queue.summary.total,
+    approvedWithoutPdf: approved.length,
+    eligibleDraftIds: approved.map(
+      function(draft) {
+        return draft.draftId;
+      }
+    ),
+    filesCreated: 0,
+    airtableRecordsUpdated: 0
+  };
+}
+
+
+function armPhase10PdfAuthorization() {
+  const properties =
+    PropertiesService.getScriptProperties();
+
+  const authorizedAt = Date.now();
+
+  properties.setProperty(
+    'PHASE10_PDF_AUTHORIZATION',
     PHASE10_PDF_CONFIRMATION_CODE
   );
+
+  properties.setProperty(
+    'PHASE10_PDF_AUTHORIZED_AT',
+    String(authorizedAt)
+  );
+
+  return getPhase10PdfAuthorizationState_();
+}
+
+
+function disarmPhase10PdfAuthorization() {
+  clearPhase10PdfAuthorization_();
+  return { armed: false };
+}
+
+
+function runPhase10ApprovedPdfProduction() {
+  const authorization =
+    getPhase10PdfAuthorizationState_();
+
+  if (!authorization.armed) {
+    throw new Error(
+      'Phase 10 PDF production refused: authorization is not armed or has expired.'
+    );
+  }
+
+  try {
+    return createPhase10ApprovedPdfs_(
+      PHASE10_PDF_CONFIRMATION_CODE
+    );
+  } finally {
+    clearPhase10PdfAuthorization_();
+  }
 }
 
 
