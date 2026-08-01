@@ -69,7 +69,23 @@ jobs:
           DEPLOYMENT_ID="$(printf '%s\n' "$API_LINE" | grep -Eo 'AKfycb[A-Za-z0-9_-]+' | head -1)"
           test -n "$DEPLOYMENT_ID"
           clasp -A "$CLASP_AUTH_FILE" deploy -i "$DEPLOYMENT_ID" -V "$EXPECTED_VERSION" -d 'Command Center aggregate-only read-only API'
-          clasp -A "$CLASP_AUTH_FILE" deployments | grep -F "$DEPLOYMENT_ID @$EXPECTED_VERSION"
+
+          VERIFIED=false
+          for ATTEMPT in 1 2 3 4 5; do
+            CURRENT_DEPLOYMENTS="$(clasp -A "$CLASP_AUTH_FILE" deployments)"
+            if printf '%s\n' "$CURRENT_DEPLOYMENTS" | grep -F "$DEPLOYMENT_ID @$EXPECTED_VERSION"; then
+              VERIFIED=true
+              break
+            fi
+            echo "Deployment list has not converged yet (attempt $ATTEMPT of 5)."
+            sleep 2
+          done
+
+          if [ "$VERIFIED" != true ]; then
+            echo "API deployment verification failed after bounded retries."
+            exit 1
+          fi
+
           echo "HEALTH_API_DEPLOYMENT_ID=$DEPLOYMENT_ID" >> "$GITHUB_ENV"
 
       - name: Run aggregate-only production health check
