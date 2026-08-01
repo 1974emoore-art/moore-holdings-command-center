@@ -637,6 +637,7 @@
         <div class="card"><div class="card-label">Approval Required</div><div id="financeApprovals" class="card-value">—</div><div class="card-note">CEO review gate</div></div>
         <div class="card"><div class="card-label">Scaling Gate</div><div id="financeScalingGate" class="card-value" style="font-size:20px;">—</div><div class="card-note">Cash-flow governance status</div></div>
       </div>
+      <div style="padding:0 18px 18px;"><h3 style="color:var(--navy);">Complete Finance Ledger</h3><div class="table-wrap"><table><thead><tr><th>Transaction</th><th>Date</th><th>Type</th><th>Category</th><th>Amount</th><th>Status</th><th>Division</th><th>Governance Gate</th><th>CEO Approval</th><th>Notes</th></tr></thead><tbody id="financeLedgerRows"></tbody></table></div></div>
       <div id="financeSafety" class="footer-note" style="padding:0 18px 18px;">Run the finance summary to verify production safety controls.</div>
     </section>
 
@@ -658,6 +659,7 @@
         <div class="card"><div class="card-label">Active Monthly Net</div><div id="turoMonthlyNet" class="card-value">—</div><div class="card-note">Revenue less payment and expenses</div></div>
       </div>
       <div id="turoTargets" class="footer-note" style="padding:0 18px 8px;">Run the fleet summary to load governed targets.</div>
+      <div style="padding:0 18px 18px;"><h3 style="color:var(--navy);">Complete Turo Fleet Tracker</h3><div class="table-wrap"><table><thead><tr><th>Order</th><th>Vehicle</th><th>Color</th><th>Status</th><th>Finance Gate</th><th>Financial Plan</th><th>Financially Ready</th><th>CEO Approval</th><th>Blockers</th></tr></thead><tbody id="turoFleetRows"></tbody></table></div></div>
       <div id="turoSafety" class="footer-note" style="padding:0 18px 18px;">Run the fleet summary to verify production safety controls.</div>
     </section>
 
@@ -679,6 +681,7 @@
         <div class="card"><div class="card-label">Acquisition Gate</div><div id="realEstateGate" class="card-value" style="font-size:20px;">—</div><div class="card-note">Controlled by Finance readiness</div></div>
       </div>
       <div id="realEstateMarkets" class="footer-note" style="padding:0 18px 8px;">Run the market summary to load governed markets.</div>
+      <div style="padding:0 18px 18px;"><h3 style="color:var(--navy);">Complete Real Estate Market Tracker</h3><div class="table-wrap"><table><thead><tr><th>Market</th><th>Priority</th><th>Research Status</th><th>Classification</th><th>Evidence</th><th>Risk</th><th>Underwriting</th><th>Financially Ready</th><th>Blockers</th></tr></thead><tbody id="realEstateMarketRows"></tbody></table></div></div>
       <div id="realEstateSafety" class="footer-note" style="padding:0 18px 18px;">Run the market summary to verify production safety controls.</div>
     </section>
 
@@ -700,6 +703,7 @@
         <div class="card"><div class="card-label">Execution Gate</div><div id="tradingGate" class="card-value" style="font-size:20px;">—</div><div class="card-note">Trading stays disabled</div></div>
       </div>
       <div id="tradingAssets" class="footer-note" style="padding:0 18px 8px;">Run the research summary to load governed assets.</div>
+      <div style="padding:0 18px 18px;"><h3 style="color:var(--navy);">Complete Trading Research Tracker</h3><div class="table-wrap"><table><thead><tr><th>Asset</th><th>Symbol</th><th>Type</th><th>Research Status</th><th>Time Horizon</th><th>Risk</th><th>Thesis</th><th>Financially Ready</th><th>Blockers</th></tr></thead><tbody id="tradingAssetRows"></tbody></table></div></div>
       <div id="tradingSafety" class="footer-note" style="padding:0 18px 18px;">Run the research summary to verify production safety controls.</div>
     </section>
 
@@ -721,6 +725,7 @@
         <div class="card"><div class="card-label">Expansion Gate</div><div id="growthGate" class="card-value" style="font-size:20px;">—</div><div class="card-note">No automatic launches</div></div>
       </div>
       <div id="growthInitiatives" class="footer-note" style="padding:0 18px 8px;">Run the growth summary to load governed initiatives.</div>
+      <div style="padding:0 18px 18px;"><h3 style="color:var(--navy);">Complete Business Growth Tracker</h3><div class="table-wrap"><table><thead><tr><th>Initiative</th><th>Business Line</th><th>Stage</th><th>Priority</th><th>Time Horizon</th><th>Launch Ready</th><th>Blockers</th><th>Notes</th></tr></thead><tbody id="growthInitiativeRows"></tbody></table></div></div>
       <div id="growthSafety" class="footer-note" style="padding:0 18px 18px;">Run the growth summary to verify production safety controls.</div>
     </section>
 
@@ -1281,6 +1286,25 @@
     }
 
 
+    function renderOperatingTable(tbodyId, items, columns) {
+      const body = document.getElementById(tbodyId);
+      const list = Array.isArray(items) ? items : [];
+      body.innerHTML = '';
+      list.forEach(function(item) {
+        const row = document.createElement('tr');
+        columns.forEach(function(column) {
+          let value = item[column];
+          if (Array.isArray(value)) value = value.length ? value.join('; ') : 'None';
+          else if (typeof value === 'boolean') value = value ? 'Yes' : 'No';
+          else if (column === 'amount') value = String.fromCharCode(36) + Number(value || 0).toLocaleString();
+          appendCell(row, value);
+        });
+        body.appendChild(row);
+      });
+      if (!list.length) body.innerHTML = '<tr><td colspan="' + columns.length + '" class="empty">No records are currently tracked in this module.</td></tr>';
+    }
+
+
     function loadFinanceCashFlow() {
       const button = document.getElementById('financeButton');
       if (button) button.disabled = true;
@@ -1292,6 +1316,7 @@
           const summary = result && result.summary ? result.summary : {};
           const readiness = result && result.readiness ? result.readiness : {};
           const safety = result && result.safety ? result.safety : {};
+          renderOperatingTable('financeLedgerRows', result && result.transactions, ['transaction','date','type','category','amount','status','division','governanceGate','approvalRequired','notes']);
 
           setText('financeIncome', formatCurrency(summary.clearedIncome));
           setText('financeExpenses', formatCurrency(summary.clearedExpenses));
@@ -1347,6 +1372,7 @@
           const targets = result && Array.isArray(result.targets)
             ? result.targets
             : [];
+          renderOperatingTable('turoFleetRows', targets, ['acquisitionOrder','vehicle','color','status','financeGate','financialPlanComplete','financiallyReady','approvalRequired','blockers']);
 
           setText('turoTracked', summary.trackedVehicles || 0);
           setText('turoResearch', summary.research || 0);
@@ -1406,6 +1432,7 @@
           const markets = result && Array.isArray(result.markets)
             ? result.markets
             : [];
+          renderOperatingTable('realEstateMarketRows', markets, ['market','priority','researchStatus','investmentClassification','evidenceConfidence','riskLevel','underwritingComplete','financiallyReady','blockers']);
 
           setText('realEstateTracked', summary.trackedMarkets || 0);
           setText('realEstateCore', summary.coreMarkets || 0);
@@ -1462,6 +1489,7 @@
           const assets = result && Array.isArray(result.assets)
             ? result.assets
             : [];
+          renderOperatingTable('tradingAssetRows', assets, ['asset','symbol','assetType','researchStatus','timeHorizon','riskLevel','thesis','financiallyReady','blockers']);
 
           setText('tradingTracked', summary.trackedAssets || 0);
           setText('tradingConviction', summary.highConviction || 0);
@@ -1521,6 +1549,7 @@
           const initiatives = result && Array.isArray(result.initiatives)
             ? result.initiatives
             : [];
+          renderOperatingTable('growthInitiativeRows', initiatives, ['initiative','businessLine','stage','priority','timeHorizon','launchReady','blockers','notes']);
 
           setText('growthTracked', summary.trackedInitiatives || 0);
           setText('growthResearch', summary.research || 0);
