@@ -58,16 +58,18 @@ jobs:
           chmod 600 "$AUTH_FILE"
           echo "CLASP_AUTH_FILE=$AUTH_FILE" >> "$GITHUB_ENV"
 
-      - name: Update existing owner-only API deployment to Version 56
+      - name: Update owner-only API deployment to source-expected version
         shell: bash
         run: |
           set -euo pipefail
+          EXPECTED_VERSION="$(sed -nE 's/.*productionVersionExpected:[[:space:]]*([0-9]+).*/\1/p' CommandCenterHealth.js | head -1)"
+          test -n "$EXPECTED_VERSION"
           DEPLOYMENTS="$(clasp -A "$CLASP_AUTH_FILE" deployments)"
           API_LINE="$(printf '%s\n' "$DEPLOYMENTS" | grep -F 'Command Center aggregate-only read-only API' | head -1)"
           DEPLOYMENT_ID="$(printf '%s\n' "$API_LINE" | grep -Eo 'AKfycb[A-Za-z0-9_-]+' | head -1)"
           test -n "$DEPLOYMENT_ID"
-          clasp -A "$CLASP_AUTH_FILE" deploy -i "$DEPLOYMENT_ID" -V 56 -d 'Command Center aggregate-only read-only API'
-          clasp -A "$CLASP_AUTH_FILE" deployments | grep -F "$DEPLOYMENT_ID @56"
+          clasp -A "$CLASP_AUTH_FILE" deploy -i "$DEPLOYMENT_ID" -V "$EXPECTED_VERSION" -d 'Command Center aggregate-only read-only API'
+          clasp -A "$CLASP_AUTH_FILE" deployments | grep -F "$DEPLOYMENT_ID @$EXPECTED_VERSION"
           echo "HEALTH_API_DEPLOYMENT_ID=$DEPLOYMENT_ID" >> "$GITHUB_ENV"
 
       - name: Run aggregate-only production health check
@@ -143,6 +145,7 @@ jobs:
           printf '%s\n' "$RESULT"
           printf '%s\n' "$RESULT" | grep -F '"completed":true'
           printf '%s\n' "$RESULT" | grep -F '"allModuleSafetyVerified":true'
+          printf '%s\n' "$RESULT" | grep -F '"personalCreditScanVerified":true'
           printf '%s\n' "$RESULT" | grep -F '"airtableWritesRequested":0'
           printf '%s\n' "$RESULT" | grep -F '"executionEnabled":0'
           printf '%s\n' "$RESULT" | grep -F '"businessesLaunched":0'

@@ -428,3 +428,42 @@ jobs:
             'All seven Command Center modules are included in health verification.'
           );
           NODE
+
+
+      - name: Verify production health version synchronization
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const workflow = fs.readFileSync(
+            '.github/workflows/command-center-production-health.yml',
+            'utf8'
+          );
+
+          const required = [
+            'productionVersionExpected:',
+            'EXPECTED_VERSION=',
+            '-V "$EXPECTED_VERSION"',
+            '@$EXPECTED_VERSION',
+            '"personalCreditScanVerified":true'
+          ];
+
+          for (const control of required) {
+            if (!workflow.includes(control)) {
+              throw new Error(
+                'Production health synchronization control missing: ' + control
+              );
+            }
+          }
+
+          if (/deployment to Version [0-9]+/.test(workflow)) {
+            throw new Error(
+              'Production health workflow must not pin a stale version.'
+            );
+          }
+
+          console.log(
+            'Production health follows the source-expected version.'
+          );
+          NODE
