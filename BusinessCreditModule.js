@@ -18,7 +18,21 @@ function scanBusinessCredit() {
     config.token
   );
 
-  return analyzeBusinessCredit_(records);
+  const result = analyzeBusinessCredit_(records);
+
+  console.log(
+    'BUSINESS CREDIT LIVE AGGREGATE: ' +
+    JSON.stringify({
+      generatedAt: result.generatedAt,
+      module: result.module,
+      recordCount: result.recordCount,
+      readiness: result.readiness,
+      summary: result.summary,
+      safety: result.safety
+    })
+  );
+
+  return result;
 }
 
 function analyzeBusinessCredit_(records) {
