@@ -619,3 +619,69 @@ jobs:
             'All eight Command Center dashboard tabs are wired.'
           );
           NODE
+
+
+      - name: Verify governed action engine safety contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const source = fs.readFileSync(
+            'GovernedActionEngine.js',
+            'utf8'
+          );
+
+          const required = [
+            'previewGovernedAction',
+            'queueGovernedAction',
+            'approveGovernedAction',
+            'executeApprovedGovernedAction',
+            'requireUnexpiredGovernedActionApproval_',
+            'requireNoVerifiedIdempotencyDuplicate_',
+            'appendGovernedActionAudit_',
+            'recordGovernedActionFailure_',
+            'maskGovernedActionPayload_',
+            'executionAdaptersLockedByDefault: true',
+            'Object.freeze',
+            'finally',
+            'lock.releaseLock()'
+          ];
+
+          for (const control of required) {
+            if (!source.includes(control)) {
+              throw new Error(
+                'Governed Action Engine control missing: ' + control
+              );
+            }
+          }
+
+          if (
+            !source.includes('function getGovernedActionExecutorRegistry_()') ||
+            !source.includes('return {};')
+          ) {
+            throw new Error(
+              'Execution adapters must remain deny-by-default.'
+            );
+          }
+
+          const forbiddenRegisteredAdapters = [
+            'UrlFetchApp.fetch(',
+            'GmailApp.sendEmail(',
+            'MailApp.sendEmail(',
+            'CalendarApp.createEvent(',
+            'DocumentApp.create('
+          ];
+
+          for (const action of forbiddenRegisteredAdapters) {
+            if (source.includes(action)) {
+              throw new Error(
+                'Unvalidated live adapter detected: ' + action
+              );
+            }
+          }
+
+          console.log(
+            'Governed Action Engine core is approval-gated and deny-by-default.'
+          );
+          NODE
