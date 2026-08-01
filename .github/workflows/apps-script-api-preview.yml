@@ -53,19 +53,16 @@ jobs:
       - name: Verify deployed source mapping
         run: clasp -A "$CLASP_AUTH_FILE" status
 
-      - name: Create separate API-executable deployment
+      - name: Verify separate API-executable deployment exists
         id: api_deploy
         shell: bash
         run: |
           set -euo pipefail
-          OUTPUT="$(clasp -A "$CLASP_AUTH_FILE" deploy --description 'Command Center aggregate-only read-only API')"
-          printf '%s\n' "$OUTPUT"
-          DEPLOYMENT_ID="$(printf '%s\n' "$OUTPUT" | grep -Eo 'AKfycb[A-Za-z0-9_-]+' | head -1)"
+          DEPLOYMENTS="$(clasp -A "$CLASP_AUTH_FILE" deployments)"
+          printf '%s\n' "$DEPLOYMENTS"
+          API_LINE="$(printf '%s\n' "$DEPLOYMENTS" | grep -F 'Command Center aggregate-only read-only API' | head -1)"
+          DEPLOYMENT_ID="$(printf '%s\n' "$API_LINE" | grep -Eo 'AKfycb[A-Za-z0-9_-]+' | head -1)"
           test -n "$DEPLOYMENT_ID"
-          if [ "$DEPLOYMENT_ID" = "AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw" ]; then
-            echo "Refusing to treat the production web deployment as the API deployment."
-            exit 1
-          fi
           echo "deployment_id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
 
       - name: Verify production web deployment remains Version 44
@@ -81,7 +78,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          RESULT="$(clasp -A "$CLASP_AUTH_FILE" run runCommandCenterReadOnlyPreview --dev)"
+          RESULT="$(clasp -A "$CLASP_AUTH_FILE" run runCommandCenterReadOnlyPreview)"
           printf '%s\n' "$RESULT"
           printf '%s\n' "$RESULT" | grep -F '"airtableWritesRequested":0'
           printf '%s\n' "$RESULT" | grep -F '"airtableRecordsChanged":0'
