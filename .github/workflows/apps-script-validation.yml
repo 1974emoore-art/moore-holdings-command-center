@@ -266,3 +266,49 @@ jobs:
 
           console.log('Read-only preview bridge verified.');
           NODE
+
+      - name: Verify separate API deployment safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const workflow = fs.readFileSync(
+            '.github/workflows/apps-script-api-preview.yml',
+            'utf8'
+          );
+
+          const required = [
+            "github.event.issue.user.login == github.repository_owner",
+            "github.event.issue.title == '[Approved Read-Only API Deploy and Preview] Phase 9 and Phase 10'",
+            "Create separate API-executable deployment",
+            "Verify production web deployment remains Version 44",
+            '"airtableWritesRequested":0',
+            '"airtableRecordsChanged":0',
+            '"filesCreated":0',
+            '"pdfsCreated":0',
+            '"messagesSent":0',
+            '"paymentsAuthorized":0'
+          ];
+
+          for (const control of required) {
+            if (!workflow.includes(control)) {
+              throw new Error('API preview safety control missing: ' + control);
+            }
+          }
+
+          const forbidden = [
+            'clasp push',
+            'clasp redeploy',
+            'executeApprovedPhase7LiveRun',
+            'runPhase10ApprovedPdfProduction'
+          ];
+
+          for (const action of forbidden) {
+            if (workflow.includes(action)) {
+              throw new Error('API preview workflow contains forbidden action: ' + action);
+            }
+          }
+
+          console.log('Separate API deployment safety verified.');
+          NODE
