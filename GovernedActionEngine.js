@@ -11,7 +11,12 @@
 const GOVERNED_ACTION_ENGINE = Object.freeze({
   version: '1.0.0',
   approvalCode: 'ERNEST_APPROVES_GOVERNED_ACTION',
-  approvalTtlMs: 15 * 60 * 1000,
+  approvalTtlByRiskMs: Object.freeze({
+    LOW: 24 * 60 * 60 * 1000,
+    MEDIUM: 4 * 60 * 60 * 1000,
+    HIGH: 60 * 60 * 1000,
+    CRITICAL: 15 * 60 * 1000
+  }),
   propertyPrefix: 'MHC_GOVERNED_ACTION_',
   auditProperty: 'MHC_GOVERNED_ACTION_AUDIT',
   maxAuditEntries: 100,
@@ -116,7 +121,7 @@ function approveGovernedAction(actionId, confirmationCode, executiveNote) {
     approvedBy: 'Ernest Moore Jr.',
     approvedAt: new Date(now).toISOString(),
     expiresAt: new Date(
-      now + GOVERNED_ACTION_ENGINE.approvalTtlMs
+      now + getGovernedActionApprovalTtlMs_(action.riskLevel)
     ).toISOString(),
     executiveNote: String(executiveNote || '').trim()
   };
@@ -332,6 +337,17 @@ function getGovernedActionExecutorRegistry_() {
 }
 
 
+function getGovernedActionApprovalTtlMs_(riskLevel) {
+  const ttl = GOVERNED_ACTION_ENGINE.approvalTtlByRiskMs[riskLevel];
+
+  if (!ttl) {
+    throw new Error('Approval expiration is not configured for ' + riskLevel);
+  }
+
+  return ttl;
+}
+
+
 function requireUnexpiredGovernedActionApproval_(action) {
   const expiresAt =
     action.approval && Date.parse(action.approval.expiresAt);
@@ -515,7 +531,10 @@ function testGovernedActionEngineContract() {
   if (
     source !== '1.0.0' ||
     supportedTypes.length < 10 ||
-    GOVERNED_ACTION_ENGINE.approvalTtlMs <= 0 ||
+    getGovernedActionApprovalTtlMs_('LOW') !== 24 * 60 * 60 * 1000 ||
+    getGovernedActionApprovalTtlMs_('MEDIUM') !== 4 * 60 * 60 * 1000 ||
+    getGovernedActionApprovalTtlMs_('HIGH') !== 60 * 60 * 1000 ||
+    getGovernedActionApprovalTtlMs_('CRITICAL') !== 15 * 60 * 1000 ||
     typeof getGovernedActionExecutorRegistry_() !== 'object' ||
     Object.keys(getGovernedActionExecutorRegistry_()).length !== 0
   ) {
