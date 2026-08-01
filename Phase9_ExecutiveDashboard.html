@@ -431,6 +431,7 @@
       <a class="module-link" href="#turoModule">Turo Fleet</a>
       <a class="module-link" href="#realEstateModule">Real Estate</a>
       <a class="module-link" href="#tradingModule">Trading Research</a>
+      <a class="module-link" href="#growthModule">Business Growth</a>
     </nav>
 
     <div class="toolbar">
@@ -480,6 +481,13 @@
         class="btn-gold"
         onclick="loadTradingResearch()">
         Trading Research
+      </button>
+
+      <button
+        id="growthButton"
+        class="btn-gold"
+        onclick="loadGrowthExpansion()">
+        Business Growth
       </button>
 
       <button
@@ -645,6 +653,27 @@
       </div>
       <div id="tradingAssets" class="footer-note" style="padding:0 18px 8px;">Run the research summary to load governed assets.</div>
       <div id="tradingSafety" class="footer-note" style="padding:0 18px 18px;">Run the research summary to verify production safety controls.</div>
+    </section>
+
+    <section id="growthModule" class="panel" style="margin-bottom:20px;">
+      <div class="panel-header">
+        <div>
+          <h2>Business Growth &amp; Expansion</h2>
+          <div class="card-note">Governed initiative pipeline • Finance, systems, compliance, business-case, and CEO gates</div>
+        </div>
+        <button class="btn-primary" onclick="loadGrowthExpansion()">Refresh Growth Pipeline</button>
+      </div>
+      <div class="cards" style="padding:18px;margin-bottom:0;">
+        <div class="card"><div class="card-label">Tracked Initiatives</div><div id="growthTracked" class="card-value">—</div><div class="card-note">Named expansion opportunities</div></div>
+        <div class="card"><div class="card-label">Research</div><div id="growthResearch" class="card-value">—</div><div class="card-note">Evidence gathering underway</div></div>
+        <div class="card"><div class="card-label">Planned</div><div id="growthPlanned" class="card-value">—</div><div class="card-note">Sequenced future initiatives</div></div>
+        <div class="card"><div class="card-label">Near Term</div><div id="growthNearTerm" class="card-value">—</div><div class="card-note">Current planning horizon</div></div>
+        <div class="card"><div class="card-label">Business Cases Complete</div><div id="growthCases" class="card-value">—</div><div class="card-note">Economics and operating plan documented</div></div>
+        <div class="card"><div class="card-label">Launch Ready</div><div id="growthReady" class="card-value">—</div><div class="card-note">Every required gate satisfied</div></div>
+        <div class="card"><div class="card-label">Expansion Gate</div><div id="growthGate" class="card-value" style="font-size:20px;">—</div><div class="card-note">No automatic launches</div></div>
+      </div>
+      <div id="growthInitiatives" class="footer-note" style="padding:0 18px 8px;">Run the growth summary to load governed initiatives.</div>
+      <div id="growthSafety" class="footer-note" style="padding:0 18px 18px;">Run the growth summary to verify production safety controls.</div>
     </section>
 
     <section class="panel">
@@ -1303,6 +1332,65 @@
           handleFailure(error);
         })
         .scanTradingResearch();
+    }
+
+
+    function loadGrowthExpansion() {
+      const button = document.getElementById('growthButton');
+      if (button) button.disabled = true;
+      showMessage('Loading governed Business Growth & Expansion...', 'info');
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (button) button.disabled = false;
+          const summary = result && result.summary ? result.summary : {};
+          const readiness = result && result.readiness ? result.readiness : {};
+          const safety = result && result.safety ? result.safety : {};
+          const initiatives = result && Array.isArray(result.initiatives)
+            ? result.initiatives
+            : [];
+
+          setText('growthTracked', summary.trackedInitiatives || 0);
+          setText('growthResearch', summary.research || 0);
+          setText('growthPlanned', summary.planned || 0);
+          setText('growthNearTerm', summary.nearTerm || 0);
+          setText('growthCases', summary.businessCasesComplete || 0);
+          setText('growthReady', summary.launchReady || 0);
+          setText('growthGate', readiness.expansionGate || 'Review Required');
+
+          document.getElementById('growthInitiatives').textContent = initiatives.length
+            ? initiatives.map(function(initiative) {
+                const readinessText = initiative.launchReady
+                  ? 'LAUNCH READY'
+                  : 'NOT READY — ' + initiative.blockers.join('; ');
+                return initiative.priority + ' ' + initiative.initiative +
+                  ' — ' + readinessText;
+              }).join(' | ')
+            : 'No Business Growth & Expansion initiatives are currently tracked.';
+
+          const safe = safety.readOnly === true &&
+            safety.airtableWritesRequested === 0 &&
+            safety.airtableRecordsChanged === 0 &&
+            safety.newBusinessesLaunched === 0 &&
+            safety.contractsAuthorized === 0 &&
+            safety.financingApplicationsSubmitted === 0 &&
+            safety.capitalExpendituresAuthorized === 0 &&
+            safety.hiresAuthorized === 0 &&
+            safety.purchasesAuthorized === 0 &&
+            safety.paymentsAuthorized === 0 &&
+            readiness.initiativeLaunchAuthorized === false;
+
+          document.getElementById('growthSafety').textContent = safe
+            ? 'Safety verified: read-only; zero launches, contracts, financing applications, capital spending, hires, purchases, and payments.'
+            : 'Business Growth & Expansion safety verification requires review.';
+
+          showMessage('Business Growth & Expansion refreshed successfully.', 'success');
+        })
+        .withFailureHandler(function(error) {
+          if (button) button.disabled = false;
+          handleFailure(error);
+        })
+        .scanGrowthExpansion();
     }
 
 
