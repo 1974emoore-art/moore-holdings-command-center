@@ -32,6 +32,7 @@ function analyzeTuroFleet_(records, financeResult) {
     approvalRequired: 0,
     clearVehicleGates: 0,
     incompleteFinancialPlans: 0,
+    financiallyReady: 0,
     activeMonthlyRevenue: 0,
     activeMonthlyCosts: 0,
     activeMonthlyNet: 0
@@ -46,6 +47,14 @@ function analyzeTuroFleet_(records, financeResult) {
     const payment = Number(fields['Monthly Payment']) || 0;
     const revenue = Number(fields['Monthly Revenue']) || 0;
     const expenses = Number(fields['Monthly Expenses']) || 0;
+
+    const financialPlanComplete =
+      Number(fields['Purchase Price']) > 0 &&
+      fields['Monthly Payment'] !== undefined &&
+      Number(fields['Monthly Payment']) >= 0 &&
+      Number(fields['Monthly Revenue']) > 0 &&
+      fields['Monthly Expenses'] !== undefined &&
+      Number(fields['Monthly Expenses']) >= 0;
 
     summary.trackedVehicles += 1;
 
@@ -65,14 +74,7 @@ function analyzeTuroFleet_(records, financeResult) {
       summary.clearVehicleGates += 1;
     }
 
-    if (
-      status !== 'research' &&
-      (
-        !(Number(fields['Purchase Price']) > 0) ||
-        !(Number(fields['Monthly Revenue']) >= 0) ||
-        !(Number(fields['Monthly Expenses']) >= 0)
-      )
-    ) {
+    if (!financialPlanComplete) {
       summary.incompleteFinancialPlans += 1;
     }
 
@@ -82,12 +84,18 @@ function analyzeTuroFleet_(records, financeResult) {
     }
 
     targets.push({
+      acquisitionOrder:
+        Number(fields['Acquisition Order']) || 999,
       vehicle: fields['Vehicle'] || 'Unnamed vehicle',
+      color: fields['Color'] || '',
       status: fields['Status'] || 'Research',
       financeGate:
         fields['Finance Gate'] || 'Review Required',
       approvalRequired:
-        fields['Approval Required'] === true
+        fields['Approval Required'] === true,
+      financialPlanComplete: financialPlanComplete,
+      financiallyReady: false,
+      blockers: []
     });
   });
 
@@ -103,6 +111,42 @@ function analyzeTuroFleet_(records, financeResult) {
   const financeGate =
     financeReadiness.scalingGate ||
     'Review Required';
+
+  targets.forEach(function(target) {
+    if (financeGate !== 'Clear') {
+      target.blockers.push(
+        'Company Finance Gate: ' + financeGate
+      );
+    }
+
+    if (target.financeGate !== 'Clear') {
+      target.blockers.push(
+        'Vehicle Finance Gate: ' +
+        target.financeGate
+      );
+    }
+
+    if (!target.financialPlanComplete) {
+      target.blockers.push(
+        'Purchase and operating plan incomplete'
+      );
+    }
+
+    if (target.approvalRequired) {
+      target.blockers.push('CEO approval required');
+    }
+
+    target.financiallyReady =
+      target.blockers.length === 0;
+
+    if (target.financiallyReady) {
+      summary.financiallyReady += 1;
+    }
+  });
+
+  targets.sort(function(a, b) {
+    return a.acquisitionOrder - b.acquisitionOrder;
+  });
 
   let acquisitionGate = 'Review Required';
 
@@ -136,6 +180,7 @@ function analyzeTuroFleet_(records, financeResult) {
     }
   };
 }
+
 
 function turoText_(value) {
   if (
@@ -176,6 +221,8 @@ function testTuroFleetCore() {
     result.readiness.acquisitionGate !==
       'Review Required' ||
     result.readiness.acquisitionAuthorized !== false ||
+    result.targets[0].financiallyReady !== false ||
+    result.targets[0].blockers.length !== 4 ||
     result.safety.readOnly !== true
   ) {
     throw new Error('Turo Fleet core validation failed.');
