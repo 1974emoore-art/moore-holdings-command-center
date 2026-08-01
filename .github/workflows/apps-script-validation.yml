@@ -446,7 +446,7 @@ jobs:
             'EXPECTED_VERSION=',
             '-V "$EXPECTED_VERSION"',
             '@$EXPECTED_VERSION',
-            '"personalCreditScanVerified":true'
+            'Full seven-module health remains owner-session-only'
           ];
 
           for (const control of required) {
@@ -459,11 +459,25 @@ jobs:
 
           if (/deployment to Version [0-9]+/.test(workflow)) {
             throw new Error(
-              'Production health workflow must not pin a stale version.'
+              'Production integrity workflow must not pin a stale version.'
             );
           }
 
+          const forbiddenExternalExecution = [
+            'script.googleapis.com/v1/scripts/',
+            'runCommandCenterProductionHealth',
+            'health-response.json'
+          ];
+
+          for (const forbidden of forbiddenExternalExecution) {
+            if (workflow.includes(forbidden)) {
+              throw new Error(
+                'Unsupported external health execution remains: ' + forbidden
+              );
+            }
+          }
+
           console.log(
-            'Production health follows the source-expected version.'
+            'Production integrity follows the source-expected version; module health remains owner-session-only.'
           );
           NODE
