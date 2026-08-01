@@ -427,6 +427,7 @@
     <nav class="module-nav" aria-label="Live command center modules">
       <a class="module-link" href="#personalCreditModule">Personal Credit</a>
       <a class="module-link" href="#businessCreditModule">Business Credit</a>
+      <a class="module-link" href="#financeModule">Finance &amp; Cash Flow</a>
     </nav>
 
     <div class="toolbar">
@@ -448,6 +449,13 @@
         class="btn-gold"
         onclick="loadBusinessCredit()">
         Business Credit Summary
+      </button>
+
+      <button
+        id="financeButton"
+        class="btn-gold"
+        onclick="loadFinanceCashFlow()">
+        Finance &amp; Cash Flow
       </button>
 
       <button
@@ -530,6 +538,26 @@
         <div class="card"><div class="card-label">Financing Gates Clear</div><div id="businessClearGates" class="card-value">—</div><div class="card-note">Eligible for later review</div></div>
       </div>
       <div id="businessSafety" class="footer-note" style="padding:0 18px 18px;">Run the summary to verify production safety controls.</div>
+    </section>
+
+    <section id="financeModule" class="panel" style="margin-bottom:20px;">
+      <div class="panel-header">
+        <div>
+          <h2>Finance &amp; Cash Flow</h2>
+          <div class="card-note">Live governed Finance Ledger summary • read-only</div>
+        </div>
+        <button class="btn-primary" onclick="loadFinanceCashFlow()">Refresh Finance</button>
+      </div>
+      <div class="cards" style="padding:18px;margin-bottom:0;">
+        <div class="card"><div class="card-label">Cleared Income</div><div id="financeIncome" class="card-value">—</div><div class="card-note">Actual cleared inflow</div></div>
+        <div class="card"><div class="card-label">Cleared Expenses</div><div id="financeExpenses" class="card-value">—</div><div class="card-note">Actual cleared outflow</div></div>
+        <div class="card"><div class="card-label">Net Cash Flow</div><div id="financeNet" class="card-value">—</div><div class="card-note">Cleared income less expenses</div></div>
+        <div class="card"><div class="card-label">Pending Expenses</div><div id="financePendingExpenses" class="card-value">—</div><div class="card-note">Not yet cleared</div></div>
+        <div class="card"><div class="card-label">Planned Expenses</div><div id="financePlannedExpenses" class="card-value">—</div><div class="card-note">Future commitments tracked</div></div>
+        <div class="card"><div class="card-label">Approval Required</div><div id="financeApprovals" class="card-value">—</div><div class="card-note">CEO review gate</div></div>
+        <div class="card"><div class="card-label">Scaling Gate</div><div id="financeScalingGate" class="card-value" style="font-size:20px;">—</div><div class="card-note">Cash-flow governance status</div></div>
+      </div>
+      <div id="financeSafety" class="footer-note" style="padding:0 18px 18px;">Run the finance summary to verify production safety controls.</div>
     </section>
 
     <section class="panel">
@@ -962,6 +990,58 @@
           handleFailure(error);
         })
         .scanBusinessCredit();
+    }
+
+
+    function loadFinanceCashFlow() {
+      const button = document.getElementById('financeButton');
+      if (button) button.disabled = true;
+      showMessage('Loading the live read-only Finance & Cash Flow summary...', 'info');
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (button) button.disabled = false;
+          const summary = result && result.summary ? result.summary : {};
+          const readiness = result && result.readiness ? result.readiness : {};
+          const safety = result && result.safety ? result.safety : {};
+
+          setText('financeIncome', formatCurrency(summary.clearedIncome));
+          setText('financeExpenses', formatCurrency(summary.clearedExpenses));
+          setText('financeNet', formatCurrency(summary.netCashFlow));
+          setText('financePendingExpenses', formatCurrency(summary.pendingExpenses));
+          setText('financePlannedExpenses', formatCurrency(summary.plannedExpenses));
+          setText('financeApprovals', summary.approvalRequired || 0);
+          setText('financeScalingGate', readiness.scalingGate || 'Review Required');
+
+          const safe = safety.readOnly === true &&
+            safety.airtableWritesRequested === 0 &&
+            safety.airtableRecordsChanged === 0 &&
+            safety.financingApplicationsSubmitted === 0 &&
+            safety.capitalExpendituresAuthorized === 0 &&
+            safety.purchasesAuthorized === 0 &&
+            safety.paymentsAuthorized === 0;
+
+          const dataMessage = readiness.hasData
+            ? 'Finance Ledger connected.'
+            : 'Finance Ledger connected; no transactions entered yet.';
+
+          document.getElementById('financeSafety').textContent = safe
+            ? dataMessage + ' Safety verified: read-only; zero writes, financing, capital expenditures, purchases, and payments.'
+            : 'Finance safety verification requires review.';
+
+          showMessage('Finance & Cash Flow summary refreshed successfully.', 'success');
+        })
+        .withFailureHandler(function(error) {
+          if (button) button.disabled = false;
+          handleFailure(error);
+        })
+        .scanFinanceCashFlow();
+    }
+
+
+    function formatCurrency(value) {
+      const amount = Number(value) || 0;
+      return '$' + amount.toFixed(2);
     }
 
 
