@@ -699,3 +699,51 @@ jobs:
             'Governed Action Engine and Airtable adapter are approval-gated and verified.'
           );
           NODE
+
+
+      - name: Verify executive governed approval queue
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const dashboard = fs.readFileSync(
+            'Phase9_ExecutiveDashboard.html',
+            'utf8'
+          );
+
+          const required = [
+            'id="governedActionPanel"',
+            'id="governedQueueSummary"',
+            'id="governedActionList"',
+            'function loadGovernedActionQueue()',
+            'function renderGovernedActionQueue(result)',
+            'function approveAndExecuteGovernedAction(action, button)',
+            '.getGovernedActionQueue()',
+            '.approveGovernedAction(',
+            "'ERNEST_APPROVES_GOVERNED_ACTION'",
+            '.executeApprovedGovernedAction(',
+            'window.confirm(',
+            "window.addEventListener(\n      'load',\n      loadGovernedActionQueue"
+          ];
+
+          for (const control of required) {
+            if (!dashboard.includes(control)) {
+              throw new Error(
+                'Executive approval queue control missing: ' + control
+              );
+            }
+          }
+
+          const scripts = Array.from(
+            dashboard.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)
+          );
+
+          for (const script of scripts) {
+            new Function(script[1]);
+          }
+
+          console.log(
+            'Executive approval queue is wired to governed approval and execution.'
+          );
+          NODE
