@@ -6,10 +6,10 @@
 - Protected branch: `main`
 - Apps Script project: `10_VITKZtmyVRU1PXnomHw6oeNd1YGkJbrujKsCGurtyIKYXu9-UHUTF8`
 - Production deployment: `AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw`
-- Current repository baseline: Apps Script Version 57
-- Current repository commit: `03e41d689bbfaa573e74397504f722d873454588`
-- Last production baseline documented with evidence in this handoff: Apps Script Version 43 (`74c229ff4cc9b98ca24bc68a1fbfdba9070372be`)
-- Version 57 production status: requires owner-session dashboard health confirmation before being recorded here as verified production
+- Current repository baseline: Apps Script Version 58
+- Verified production baseline: Apps Script Version 58
+- Version 58 deployment verification run: `30710717423`
+- Full seven-module health status: requires authenticated owner-session dashboard confirmation
 - Live-write default: disarmed
 
 ## Normal operating path
@@ -114,8 +114,9 @@ The five generated packets cover Jefferson Capital Systems, LLC for Experian and
 
 ### Unified Command Center core — August 1, 2026
 
-- Current repository version target: 57
-- Current repository commit: `03e41d689bbfaa573e74397504f722d873454588`
+- Verified production version: 58
+- Version 58 source commit: `6f4144882c89c3a1135b885ac2f2f5b9084422a7`
+- Deployment verification run: `30710717423`
 - Connected dashboard cores: Personal Credit, Business Credit, Finance & Cash Flow, Turo Fleet, Real Estate, Trading Research, and Business Growth & Expansion
 - Automatic owner-session System Health panel: implemented
 - Pull-request validation run: `30696050234`
@@ -126,7 +127,8 @@ The five generated packets cover Jefferson Capital Systems, LLC for Experian and
 
 ## Current controlled execution step
 
-1. Open the authenticated production dashboard and allow the Version 57 System Health panel to run.
-2. Record Version 57 as verified production only if it reports **HEALTHY**, **7 / 7** modules, zero Airtable writes, zero trading execution, and zero business launches.
-3. If any value fails, keep live writes disarmed and follow `PRODUCTION_RECOVERY.md`.
-4. Continue the separate collector-evidence review in issue #33 without acknowledging debt, sending correspondence, changing Airtable, or altering certified-mail tracking until account mapping is verified.
+1. Open the authenticated production dashboard and allow the Version 58 System Health panel to run.
+2. Record full operational health only if it reports **HEALTHY**, **7 / 7** modules, zero Airtable writes, zero trading execution, and zero business launches.
+3. GitHub verifies deployment integrity only. Do not restore the unsupported external `scripts.run` health path; Google returns HTTP 403 outside the owner session.
+4. If any dashboard value fails, keep live writes disarmed and follow `PRODUCTION_RECOVERY.md`.
+5. Continue the separate collector-evidence review in issue #33 without acknowledging debt, sending correspondence, changing Airtable, or altering certified-mail tracking until account mapping is verified.
