@@ -587,7 +587,37 @@
         <div class="card"><div class="card-label">Blocked</div><div id="businessBlocked" class="card-value">—</div><div class="card-note">Do not apply</div></div>
         <div class="card"><div class="card-label">Financing Gates Clear</div><div id="businessClearGates" class="card-value">—</div><div class="card-note">Eligible for later review</div></div>
       </div>
-      <div id="businessSafety" class="footer-note" style="padding:0 18px 18px;">Run the summary to verify production safety controls.</div>
+      <div style="padding:0 18px 18px;">
+        <h3 style="color:var(--navy);margin:4px 0 12px;">Executive Action Queue</h3>
+        <div id="businessNextActions" class="cards" style="margin-bottom:18px;">
+          <div class="empty">Loading business-credit actions...</div>
+        </div>
+
+        <h3 style="color:var(--navy);margin:4px 0 12px;">Complete Business Credit Tracker</h3>
+        <div class="table-wrap" style="border:1px solid var(--border);border-radius:10px;">
+          <table aria-label="Complete Business Credit tracker">
+            <thead>
+              <tr>
+                <th>Credit Item</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Bureau Reporting</th>
+                <th>Reporting Verified</th>
+                <th>Readiness</th>
+                <th>Financing Gate</th>
+                <th>Action Needed</th>
+                <th>Agent Action</th>
+                <th>CEO Approval</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody id="businessCreditRows">
+              <tr><td colspan="11" class="loading">Loading all Business Credit records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="businessSafety" class="footer-note" style="padding:0 18px 18px;">Run the full workspace to verify production safety controls.</div>
     </section>
 
     <section id="financeModule" class="panel" style="margin-bottom:20px;">
@@ -1142,13 +1172,112 @@
             ? 'Safety verified: read-only; zero writes, applications, purchases, and payments.'
             : 'Safety verification requires review.';
 
-          showMessage('Business Credit summary refreshed successfully.', 'success');
+          renderBusinessCreditWorkspace(result);
+
+          showMessage('Complete Business Credit workspace refreshed successfully.', 'success');
         })
         .withFailureHandler(function(error) {
           if (button) button.disabled = false;
           handleFailure(error);
         })
         .scanBusinessCredit();
+    }
+
+
+    function renderBusinessCreditWorkspace(result) {
+      const groups = [
+        ['Action Required', result && result.actionRequired],
+        ['Monitoring', result && result.monitoring],
+        ['Blocked', result && result.blocked],
+        ['Complete', result && result.complete]
+      ];
+      const rows = document.getElementById('businessCreditRows');
+      rows.innerHTML = '';
+
+      groups.forEach(function(group) {
+        const category = group[0];
+        const items = Array.isArray(group[1]) ? group[1] : [];
+
+        items.forEach(function(item) {
+          const row = document.createElement('tr');
+          appendCell(row, item.creditItem);
+          appendCell(row, category);
+          appendCell(row, item.status || item.operationalClassification);
+          appendCell(row, item.bureauReporting);
+          appendCell(row, item.reportingVerified ? 'Yes' : 'No');
+          appendCell(
+            row,
+            item.businessReadinessScore === null
+              ? 'Not scored'
+              : item.businessReadinessScore + '%'
+          );
+          appendCell(row, item.financingGate);
+          appendCell(row, item.actionNeeded);
+          appendCell(row, item.agentAction);
+          appendCell(
+            row,
+            item.approvalRequired
+              ? 'Required — ' + (item.approvalReason || 'CEO review')
+              : 'Not required'
+          );
+          appendCell(row, item.notes);
+          rows.appendChild(row);
+        });
+      });
+
+      if (!rows.children.length) {
+        rows.innerHTML =
+          '<tr><td colspan="11" class="empty">' +
+          'No Business Credit records are currently tracked.' +
+          '</td></tr>';
+      }
+
+      const actions = result && Array.isArray(result.executiveNextActions)
+        ? result.executiveNextActions
+        : [];
+      const actionArea = document.getElementById('businessNextActions');
+      actionArea.innerHTML = '';
+
+      if (!actions.length) {
+        actionArea.innerHTML =
+          '<div class="empty">No Business Credit actions are pending.</div>';
+        return;
+      }
+
+      actions.forEach(function(action) {
+        const card = document.createElement('article');
+        card.className = 'card';
+
+        const label = document.createElement('div');
+        label.className = 'card-label';
+        label.textContent = action.priority + ' Priority';
+
+        const title = document.createElement('h3');
+        title.style.margin = '10px 0 7px';
+        title.style.color = 'var(--navy)';
+        title.textContent = action.creditItem || 'Business Credit item';
+
+        const next = document.createElement('div');
+        next.textContent = action.action || 'Review required';
+
+        const approval = document.createElement('div');
+        approval.className = 'card-note';
+        approval.style.marginTop = '8px';
+        approval.textContent = action.approvalRequired
+          ? 'CEO approval required'
+          : 'Monitoring — no approval required';
+
+        const reason = document.createElement('div');
+        reason.className = 'card-note';
+        reason.textContent = action.reason || '';
+
+        card.appendChild(label);
+        card.appendChild(title);
+        card.appendChild(next);
+        card.appendChild(approval);
+        card.appendChild(reason);
+        actionArea.appendChild(card);
+      });
     }
 
 
