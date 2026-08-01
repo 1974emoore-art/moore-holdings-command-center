@@ -527,6 +527,18 @@
       </button>
     </div>
 
+    <section id="governedActionPanel" class="panel" style="margin-bottom:20px;">
+      <div class="panel-header">
+        <div>
+          <h2>Executive Approval Queue</h2>
+          <div class="card-note">Preview → approve → execute → verify → audit</div>
+        </div>
+        <button id="governedQueueRefreshButton" class="btn-primary" onclick="loadGovernedActionQueue()">Refresh Approval Queue</button>
+      </div>
+      <div id="governedQueueSummary" class="footer-note" style="padding:14px 18px 0;">Loading governed actions...</div>
+      <div id="governedActionList" class="cards" style="padding:18px;margin-bottom:0;"></div>
+    </section>
+
     <section id="personalCreditModule" class="cards">
       <div class="card">
         <div class="card-label">Phase 8 Reviews</div>
@@ -1143,6 +1155,152 @@
           handleFailure(error);
         })
         .scanPersonalCredit();
+    }
+
+
+    function loadGovernedActionQueue() {
+      const button = document.getElementById('governedQueueRefreshButton');
+      if (button) button.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (button) button.disabled = false;
+          renderGovernedActionQueue(result);
+        })
+        .withFailureHandler(function(error) {
+          if (button) button.disabled = false;
+          handleFailure(error);
+        })
+        .getGovernedActionQueue();
+    }
+
+
+    function renderGovernedActionQueue(result) {
+      const actions = result && Array.isArray(result.actions)
+        ? result.actions
+        : [];
+      const pending = actions.filter(function(action) {
+        return ['QUEUED', 'APPROVED', 'FAILED', 'EXPIRED'].indexOf(
+          action.status
+        ) !== -1;
+      });
+      const summary = document.getElementById('governedQueueSummary');
+      const list = document.getElementById('governedActionList');
+
+      summary.textContent =
+        pending.length + ' action(s) need executive attention. ' +
+        actions.filter(function(action) {
+          return action.status === 'VERIFIED';
+        }).length + ' verified.';
+      list.innerHTML = '';
+
+      if (!pending.length) {
+        list.innerHTML =
+          '<div class="empty">No governed actions currently need approval.</div>';
+        return;
+      }
+
+      pending.forEach(function(action) {
+        const card = document.createElement('article');
+        card.className = 'card';
+
+        const label = document.createElement('div');
+        label.className = 'card-label';
+        label.textContent =
+          action.riskLevel + ' RISK • ' + action.status;
+
+        const title = document.createElement('h3');
+        title.style.color = 'var(--navy)';
+        title.textContent =
+          action.actionType + ' — ' + action.target;
+
+        const detail = document.createElement('p');
+        detail.textContent =
+          action.module + ' • ' + action.lifecycleStage +
+          ' • ' + action.reason;
+
+        card.appendChild(label);
+        card.appendChild(title);
+        card.appendChild(detail);
+
+        if (action.sideEffectsPreview) {
+          const preview = document.createElement('p');
+          preview.className = 'card-note';
+          preview.textContent =
+            'Preview: ' + action.sideEffectsPreview.summary;
+          card.appendChild(preview);
+        }
+
+        if (action.status === 'QUEUED') {
+          const execute = document.createElement('button');
+          execute.className =
+            action.riskLevel === 'CRITICAL'
+              ? 'btn-reject'
+              : 'btn-approve';
+          execute.textContent = 'Approve and Execute';
+          execute.onclick = function() {
+            approveAndExecuteGovernedAction(action, execute);
+          };
+          card.appendChild(execute);
+        }
+
+        list.appendChild(card);
+      });
+    }
+
+
+    function approveAndExecuteGovernedAction(action, button) {
+      const accepted = window.confirm(
+        'Approve and execute ' + action.actionType +
+        ' for ' + action.target + '?\n\n' +
+        'Risk: ' + action.riskLevel +
+        '\nReason: ' + action.reason
+      );
+
+      if (!accepted) return;
+
+      button.disabled = true;
+      button.textContent = 'Approving...';
+      const confirmation = 'ERNEST_APPROVES_GOVERNED_ACTION';
+
+      google.script.run
+        .withSuccessHandler(function() {
+          button.textContent = 'Executing...';
+
+          google.script.run
+            .withSuccessHandler(function(result) {
+              showMessage(
+                result && result.status === 'VERIFIED'
+                  ? 'Action executed and verified.'
+                  : 'Action execution requires review.',
+                result && result.status === 'VERIFIED'
+                  ? 'success'
+                  : 'error'
+              );
+              loadGovernedActionQueue();
+              loadDashboard();
+            })
+            .withFailureHandler(function(error) {
+              button.disabled = false;
+              button.textContent = 'Approve and Execute';
+              handleFailure(error);
+              loadGovernedActionQueue();
+            })
+            .executeApprovedGovernedAction(
+              action.actionId,
+              confirmation
+            );
+        })
+        .withFailureHandler(function(error) {
+          button.disabled = false;
+          button.textContent = 'Approve and Execute';
+          handleFailure(error);
+        })
+        .approveGovernedAction(
+          action.actionId,
+          confirmation,
+          'Approved from Executive Approval Queue'
+        );
     }
 
 
@@ -1929,6 +2087,11 @@
     window.addEventListener(
       'load',
       loadDashboard
+    );
+
+    window.addEventListener(
+      'load',
+      loadGovernedActionQueue
     );
   </script>
 <!-- PHASE 10 — LETTER REVIEW PANEL -->
