@@ -556,6 +556,10 @@ jobs:
             'event.preventDefault();',
             'panel.hidden = !isActive;',
             "link.classList.toggle('active', isActive);",
+            "document.querySelectorAll(",
+            "'[data-command-center-module]'",
+            "element.hidden = !isActive;",
+            "window.scrollTo({",
             "activateCommandCenterModule(initialModule, false);"
           ];
 
@@ -566,6 +570,25 @@ jobs:
             ) {
               throw new Error(
                 'Dashboard module tab is not wired: ' + moduleId
+              );
+            }
+          }
+
+          const personalOnlyViews = [
+            'personalReviewQueue',
+            'personalSafetyFooter',
+            'phase10ReviewPanel'
+          ];
+
+          for (const viewId of personalOnlyViews) {
+            if (
+              !dashboard.includes('id="' + viewId + '"') ||
+              !dashboard.includes(
+                'data-command-center-module="personalCreditModule"'
+              )
+            ) {
+              throw new Error(
+                'Personal Credit view isolation is missing: ' + viewId
               );
             }
           }

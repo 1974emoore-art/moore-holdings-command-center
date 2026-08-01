@@ -713,7 +713,10 @@
       <div id="healthSafety" class="footer-note" style="padding:0 18px 18px;">Waiting for owner-session verification.</div>
     </section>
 
-    <section class="panel">
+    <section
+      id="personalReviewQueue"
+      class="panel"
+      data-command-center-module="personalCreditModule">
       <div class="panel-header">
         <h2>AI Review & Approval Queue</h2>
 
@@ -772,7 +775,10 @@
       </div>
     </section>
 
-    <div class="footer-note">
+    <div
+      id="personalSafetyFooter"
+      class="footer-note"
+      data-command-center-module="personalCreditModule">
       Safety rule: No Personal Credit Repair record is changed
       without Ernest Moore Jr.'s approval.
     </div>
@@ -1666,6 +1672,18 @@
         }
       });
 
+      document.querySelectorAll(
+        '[data-command-center-module]'
+      ).forEach(function(element) {
+        const ownerModule = element.getAttribute(
+          'data-command-center-module'
+        );
+        const isActive = ownerModule === moduleId;
+
+        element.hidden = !isActive;
+        element.setAttribute('aria-hidden', String(!isActive));
+      });
+
       if (
         window.history &&
         typeof window.history.replaceState === 'function'
@@ -1682,13 +1700,11 @@
         }
       }
 
-      const activePanel = document.getElementById(moduleId);
-      if (activePanel) {
-        activePanel.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-      }
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'smooth'
+      });
 
       return true;
     }
@@ -1758,7 +1774,10 @@
     );
   </script>
 <!-- PHASE 10 — LETTER REVIEW PANEL -->
-<section id="phase10ReviewPanel" style="
+<section
+  id="phase10ReviewPanel"
+  data-command-center-module="personalCreditModule"
+  style="
   margin:24px auto;
   padding:20px;
   max-width:1100px;
