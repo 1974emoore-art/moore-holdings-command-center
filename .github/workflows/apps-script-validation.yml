@@ -560,7 +560,15 @@ jobs:
             "'[data-command-center-module]'",
             "element.hidden = !isActive;",
             "window.scrollTo({",
-            "activateCommandCenterModule(initialModule, false);"
+            "activateCommandCenterModule(initialModule, false);",
+            "id=\"businessNextActions\"",
+            "id=\"businessCreditRows\"",
+            "function renderBusinessCreditWorkspace(result)",
+            "result.executiveNextActions",
+            "item.businessReadinessScore",
+            "item.financingGate",
+            "item.actionNeeded",
+            "item.approvalRequired"
           ];
 
           for (const moduleId of moduleIds) {
