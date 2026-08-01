@@ -333,7 +333,196 @@ function getGovernedActionExecutor_(actionType) {
 
 
 function getGovernedActionExecutorRegistry_() {
-  return {};
+  return {
+    AIRTABLE_RECORD_UPDATE: executeGovernedAirtableRecordUpdate_
+  };
+}
+
+
+function executeGovernedAirtableRecordUpdate_(action) {
+  const payload = action && action.payload ? action.payload : {};
+  const tableId = String(payload.tableId || '').trim();
+  const recordId = String(payload.recordId || '').trim();
+  const fields =
+    payload.fields && typeof payload.fields === 'object'
+      ? payload.fields
+      : null;
+  const expectedFields =
+    payload.expectedFields &&
+    typeof payload.expectedFields === 'object'
+      ? payload.expectedFields
+      : {};
+
+  if (!tableId || !recordId || !fields || !Object.keys(fields).length) {
+    throw new Error(
+      'Airtable update requires tableId, recordId, and fields.'
+    );
+  }
+
+  const config = getGovernedAirtableConfig_(tableId);
+  const before = fetchGovernedAirtableRecord_(
+    config,
+    tableId,
+    recordId
+  );
+
+  Object.keys(expectedFields).forEach(function(fieldName) {
+    if (
+      !governedActionValuesEqual_(
+        before.fields && before.fields[fieldName],
+        expectedFields[fieldName]
+      )
+    ) {
+      throw new Error(
+        'Airtable record changed after preview. Expected value mismatch for ' +
+        fieldName +
+        '; action stopped safely.'
+      );
+    }
+  });
+
+  const url = buildGovernedAirtableRecordUrl_(
+    config.baseId,
+    tableId,
+    recordId
+  );
+  const response = UrlFetchApp.fetch(url, {
+    method: 'patch',
+    contentType: 'application/json',
+    headers: {
+      Authorization: 'Bearer ' + config.token
+    },
+    payload: JSON.stringify({
+      fields: fields,
+      typecast: false
+    }),
+    muteHttpExceptions: true
+  });
+  requireGovernedAirtableSuccess_(response, 'update');
+
+  const after = fetchGovernedAirtableRecord_(
+    config,
+    tableId,
+    recordId
+  );
+  const verified = Object.keys(fields).every(function(fieldName) {
+    return governedActionValuesEqual_(
+      after.fields && after.fields[fieldName],
+      fields[fieldName]
+    );
+  });
+
+  if (!verified) {
+    throw new Error(
+      'Airtable read-back verification failed; recovery review required.'
+    );
+  }
+
+  return {
+    completed: true,
+    verified: true,
+    result: {
+      tableId: tableId,
+      recordId: recordId,
+      fieldsUpdated: Object.keys(fields)
+    },
+    sideEffects: {
+      airtableRecordsChanged: 1,
+      messagesSent: 0,
+      filesCreated: 0,
+      paymentsAuthorized: 0
+    },
+    evidence: {
+      before: maskGovernedActionPayload_(before.fields || {}),
+      after: maskGovernedActionPayload_(after.fields || {}),
+      verifiedFields: Object.keys(fields)
+    }
+  };
+}
+
+
+function getGovernedAirtableConfig_(requestedTableId) {
+  const properties = PropertiesService.getScriptProperties();
+  const all = properties.getProperties();
+  const token =
+    all.AIRTABLE_TOKEN ||
+    all.AIRTABLE_API_KEY;
+  const baseId = all.AIRTABLE_BASE_ID;
+  const allowedTableIds = Object.keys(all)
+    .filter(function(key) {
+      return /^AIRTABLE_.*TABLE.*_?ID$/.test(key);
+    })
+    .map(function(key) {
+      return String(all[key] || '').trim();
+    })
+    .filter(Boolean);
+
+  if (!token || !baseId) {
+    throw new Error('Governed Airtable configuration is incomplete.');
+  }
+
+  if (allowedTableIds.indexOf(requestedTableId) === -1) {
+    throw new Error(
+      'Airtable table is not in the governed allowlist.'
+    );
+  }
+
+  return {
+    token: token,
+    baseId: baseId
+  };
+}
+
+
+function fetchGovernedAirtableRecord_(config, tableId, recordId) {
+  const response = UrlFetchApp.fetch(
+    buildGovernedAirtableRecordUrl_(
+      config.baseId,
+      tableId,
+      recordId
+    ),
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + config.token
+      },
+      muteHttpExceptions: true
+    }
+  );
+
+  requireGovernedAirtableSuccess_(response, 'read');
+  return JSON.parse(response.getContentText());
+}
+
+
+function buildGovernedAirtableRecordUrl_(baseId, tableId, recordId) {
+  return (
+    'https://api.airtable.com/v0/' +
+    encodeURIComponent(baseId) +
+    '/' +
+    encodeURIComponent(tableId) +
+    '/' +
+    encodeURIComponent(recordId)
+  );
+}
+
+
+function requireGovernedAirtableSuccess_(response, operation) {
+  const code = response.getResponseCode();
+
+  if (code < 200 || code >= 300) {
+    throw new Error(
+      'Governed Airtable ' + operation +
+      ' failed with HTTP ' + code +
+      ': ' + response.getContentText()
+    );
+  }
+}
+
+
+function governedActionValuesEqual_(left, right) {
+  return JSON.stringify(left === undefined ? null : left) ===
+    JSON.stringify(right === undefined ? null : right);
 }
 
 
@@ -536,7 +725,8 @@ function testGovernedActionEngineContract() {
     getGovernedActionApprovalTtlMs_('HIGH') !== 60 * 60 * 1000 ||
     getGovernedActionApprovalTtlMs_('CRITICAL') !== 15 * 60 * 1000 ||
     typeof getGovernedActionExecutorRegistry_() !== 'object' ||
-    Object.keys(getGovernedActionExecutorRegistry_()).length !== 0
+    getGovernedActionExecutorRegistry_().AIRTABLE_RECORD_UPDATE !==
+      executeGovernedAirtableRecordUpdate_
   ) {
     throw new Error('Governed Action Engine contract validation failed.');
   }
@@ -547,7 +737,8 @@ function testGovernedActionEngineContract() {
     supportedActionTypes: supportedTypes.length,
     safety: {
       externalActionsPerformed: 0,
-      liveAdaptersRegistered: 0
+      liveAdaptersRegistered: 1,
+      adapterRequiresGovernedApproval: true
     }
   };
 }
