@@ -1317,7 +1317,26 @@
           } else if (typeof value === 'boolean') {
             value = value ? 'Yes' : 'No';
           } else if (column === 'amount') {
-            value = '
+            value = String.fromCharCode(36) +
+              Number(value || 0).toLocaleString();
+          }
+
+          appendCell(row, value);
+        });
+
+        body.appendChild(row);
+      });
+
+      if (!list.length) {
+        body.innerHTML =
+          '<tr><td colspan="' + columns.length + '" class="empty">' +
+          'No records are currently tracked in this module.' +
+          '</td></tr>';
+      }
+    }
+
+
+    function loadFinanceCashFlow() {
       const button = document.getElementById('financeButton');
       if (button) button.disabled = true;
       showMessage('Loading the live read-only Finance & Cash Flow summary...', 'info');
