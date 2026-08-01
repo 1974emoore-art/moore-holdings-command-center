@@ -46,13 +46,29 @@ During this work:
 
 No live data correction should occur until the matching defect below is corrected and regression-tested.
 
-## Current External Blocker
+## Version 44 Read-Only Verification — Completed
 
-The Version 44 aggregate preview could not be remotely executed because Google returned:
+The prior remote execution-authorization barrier was resolved by signing into the production Apps Script owner account and running the existing protected function directly in the Apps Script editor.
 
-> Unable to run script function. Please make sure you have permission to run the script function.
+Verified aggregate result:
 
-The command syntax and deployment path were corrected. This remaining failure is a Google Apps Script execution-authorization barrier, not evidence that the completed Apps Script cleanup was lost or incomplete. Do not create additional deployments merely to repeat this test.
+- Preview completed: **true**
+- Production version expected: **44**
+- Report accounts parsed: **37**
+- Source entries built: **105**
+- Held accounts rechecked: **7**
+- Promotion candidates: **0**
+- Remaining on hold: **7**
+- Evidence-supported drafts: **0**
+- Airtable writes requested: **0**
+- Airtable records changed: **0**
+- Phase 8 decisions changed: **0**
+- Files/PDFs created: **0**
+- Letters mailed: **0**
+- Messages sent: **0**
+- Payments authorized: **0**
+
+Execution completed successfully in the Apps Script editor on August 1, 2026. Keep all packets on hold until supported evidence exists. No additional deployment is needed for this verification.
 
 ## Read-Only Held-Account Findings
 
@@ -82,9 +98,9 @@ Resume at the Version 44 production checkpoint with only the remaining completio
 
 1. Preserve all completed Phase 6, Phase 9, and Phase 10 code and evidence controls.
 2. Treat the held-account observations as final review findings already protected by the completed system; do not describe them as unfinished phase development.
-3. Resolve only the external Google Apps Script execution-authorization barrier needed to verify the existing Version 44 aggregate-only preview. Do not create more deployments or change completed phase logic merely to bypass authorization.
-4. Complete a final command-center readiness verification from the existing Version 44 outputs and saved evidence.
-5. Keep unsupported items on hold.
+3. Treat the Version 44 aggregate-only preview as successfully verified; do not repeat it or create another deployment.
+4. Complete the final command-center readiness assessment from the verified Version 44 result and saved evidence.
+5. Keep all seven unsupported held accounts and all packets on hold until reliable supporting evidence exists.
 6. Keep Airtable writes, PDFs, email, mailing, and payments disabled unless separately and specifically authorized at the required execution gate.
 
 ## Completion Boundary
