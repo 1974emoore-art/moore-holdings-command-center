@@ -111,6 +111,16 @@
       outline: none;
     }
 
+    .module-link.active {
+      color: var(--white);
+      background: var(--navy);
+      border-color: var(--gold);
+    }
+
+    .command-center-module[hidden] {
+      display: none !important;
+    }
+
     .toolbar {
       display: flex;
       gap: 10px;
@@ -1615,6 +1625,132 @@
       );
     }
 
+
+    const COMMAND_CENTER_MODULES = {
+      personalCreditModule: 'loadDashboard',
+      businessCreditModule: 'loadBusinessCredit',
+      financeModule: 'loadFinanceCashFlow',
+      turoModule: 'loadTuroFleet',
+      realEstateModule: 'loadRealEstateMarkets',
+      tradingModule: 'loadTradingResearch',
+      growthModule: 'loadGrowthExpansion',
+      healthModule: 'loadCommandCenterHealth'
+    };
+
+
+    function activateCommandCenterModule(moduleId, loadModule) {
+      if (!Object.prototype.hasOwnProperty.call(
+        COMMAND_CENTER_MODULES,
+        moduleId
+      )) {
+        return false;
+      }
+
+      Object.keys(COMMAND_CENTER_MODULES).forEach(function(id) {
+        const panel = document.getElementById(id);
+        const link = document.querySelector(
+          '.module-link[href="#' + id + '"]'
+        );
+        const isActive = id === moduleId;
+
+        if (panel) {
+          panel.classList.add('command-center-module');
+          panel.hidden = !isActive;
+          panel.setAttribute('aria-hidden', String(!isActive));
+        }
+
+        if (link) {
+          link.classList.toggle('active', isActive);
+          link.setAttribute('aria-selected', String(isActive));
+          link.setAttribute('tabindex', isActive ? '0' : '-1');
+        }
+      });
+
+      if (
+        window.history &&
+        typeof window.history.replaceState === 'function'
+      ) {
+        window.history.replaceState(null, '', '#' + moduleId);
+      }
+
+      if (loadModule !== false) {
+        const loaderName = COMMAND_CENTER_MODULES[moduleId];
+        const loader = window[loaderName];
+
+        if (typeof loader === 'function') {
+          loader();
+        }
+      }
+
+      const activePanel = document.getElementById(moduleId);
+      if (activePanel) {
+        activePanel.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+
+      return true;
+    }
+
+
+    function initializeCommandCenterTabs() {
+      const links = document.querySelectorAll(
+        '.module-nav .module-link'
+      );
+
+      links.forEach(function(link) {
+        link.setAttribute('role', 'tab');
+
+        link.addEventListener('click', function(event) {
+          event.preventDefault();
+          activateCommandCenterModule(
+            link.getAttribute('href').slice(1),
+            true
+          );
+        });
+      });
+
+      const toolbarModules = {
+        scanButton: 'personalCreditModule',
+        businessCreditButton: 'businessCreditModule',
+        financeButton: 'financeModule',
+        turoButton: 'turoModule',
+        realEstateButton: 'realEstateModule',
+        tradingButton: 'tradingModule',
+        growthButton: 'growthModule',
+        healthButton: 'healthModule'
+      };
+
+      Object.keys(toolbarModules).forEach(function(buttonId) {
+        const button = document.getElementById(buttonId);
+
+        if (button) {
+          button.addEventListener('click', function() {
+            activateCommandCenterModule(
+              toolbarModules[buttonId],
+              false
+            );
+          });
+        }
+      });
+
+      const requestedModule = window.location.hash.slice(1);
+      const initialModule = Object.prototype.hasOwnProperty.call(
+        COMMAND_CENTER_MODULES,
+        requestedModule
+      )
+        ? requestedModule
+        : 'personalCreditModule';
+
+      activateCommandCenterModule(initialModule, false);
+    }
+
+
+    window.addEventListener(
+      'load',
+      initializeCommandCenterTabs
+    );
 
     window.addEventListener(
       'load',
