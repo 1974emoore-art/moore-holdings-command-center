@@ -568,7 +568,13 @@ jobs:
             "item.businessReadinessScore",
             "item.financingGate",
             "item.actionNeeded",
-            "item.approvalRequired"
+            "item.approvalRequired",
+            "id=\"financeLedgerRows\"",
+            "id=\"turoFleetRows\"",
+            "id=\"realEstateMarketRows\"",
+            "id=\"tradingAssetRows\"",
+            "id=\"growthInitiativeRows\"",
+            "function renderOperatingTable(tbodyId, items, columns)"
           ];
 
           for (const moduleId of moduleIds) {
