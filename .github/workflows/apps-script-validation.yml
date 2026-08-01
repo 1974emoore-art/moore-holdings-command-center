@@ -193,3 +193,76 @@ jobs:
 
           console.log('Phase 9 read-only boundary verified.');
           NODE
+
+      - name: Verify read-only preview bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+
+          const bridge = fs.readFileSync('ReadOnlyPreview.js', 'utf8');
+          const manifest = JSON.parse(fs.readFileSync('appsscript.json', 'utf8'));
+          const workflow = fs.readFileSync(
+            '.github/workflows/command-center-read-only-preview.yml',
+            'utf8'
+          );
+
+          if (
+            !manifest.executionApi ||
+            manifest.executionApi.access !== 'MYSELF'
+          ) {
+            throw new Error('Execution API must remain owner-only.');
+          }
+
+          const requiredBridgeControls = [
+            'runPhase9HeldAccountPromotionReview()',
+            'runPhase10FinalSystemCompletion()',
+            'airtableWritesRequested: 0',
+            'airtableRecordsChanged: 0',
+            'filesCreated: 0',
+            'pdfsCreated: 0',
+            'lettersMailed: 0',
+            'messagesSent: 0',
+            'paymentsAuthorized: 0'
+          ];
+
+          for (const control of requiredBridgeControls) {
+            if (!bridge.includes(control)) {
+              throw new Error('Read-only bridge control missing: ' + control);
+            }
+          }
+
+          const forbiddenBridgePatterns = [
+            /UrlFetchApp\.fetch\s*\(/,
+            /DocumentApp\.create\s*\(/,
+            /createFile\s*\(/,
+            /armPhase7WriteAuthorization\s*\(/,
+            /executeApprovedPhase7LiveRun\s*\(/,
+            /savePhase10ReviewDecision\s*\(/,
+            /armPhase10PdfAuthorization\s*\(/,
+            /runPhase10ApprovedPdfProduction\s*\(/
+          ];
+
+          for (const pattern of forbiddenBridgePatterns) {
+            if (pattern.test(bridge)) {
+              throw new Error('Read-only bridge contains forbidden action: ' + pattern);
+            }
+          }
+
+          const requiredWorkflowControls = [
+            "github.event.issue.user.login == github.repository_owner",
+            "github.event.issue.title == '[Approved Read-Only Preview] Phase 9 and Phase 10'",
+            '"airtableWritesRequested":0',
+            '"filesCreated":0',
+            '"messagesSent":0'
+          ];
+
+          for (const control of requiredWorkflowControls) {
+            if (!workflow.includes(control)) {
+              throw new Error('Preview workflow control missing: ' + control);
+            }
+          }
+
+          console.log('Read-only preview bridge verified.');
+          NODE

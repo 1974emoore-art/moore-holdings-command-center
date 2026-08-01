@@ -1,0 +1,114 @@
+name: Command Center Read-Only Preview
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: command-center-read-only-preview
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'issues' &&
+        github.event.issue.user.login == github.repository_owner &&
+        github.event.issue.title == '[Approved Read-Only Preview] Phase 9 and Phase 10'
+      )
+    runs-on: ubuntu-latest
+    environment: apps-script-production
+    steps:
+      - name: Require protected authorization
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CLASPRC_JSON" ]; then
+            echo "CLASPRC_JSON is not configured; refusing preview."
+            exit 1
+          fi
+
+      - name: Check out authoritative main
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install compatible Apps Script CLI
+        run: |
+          set -euo pipefail
+          npm install --global @google/clasp@3.3.0
+          clasp --version
+
+      - name: Prepare protected authorization
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          AUTH_FILE="$RUNNER_TEMP/clasprc.json"
+          printf '%s' "$CLASPRC_JSON" > "$AUTH_FILE"
+          chmod 600 "$AUTH_FILE"
+          echo "CLASP_AUTH_FILE=$AUTH_FILE" >> "$GITHUB_ENV"
+
+      - name: Run aggregate-only protected preview
+        id: preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          RESULT="$(clasp -A "$CLASP_AUTH_FILE" run runCommandCenterReadOnlyPreview --nondev)"
+          printf '%s\n' "$RESULT"
+          printf '%s\n' "$RESULT" | grep -F '"airtableWritesRequested":0'
+          printf '%s\n' "$RESULT" | grep -F '"filesCreated":0'
+          printf '%s\n' "$RESULT" | grep -F '"messagesSent":0'
+          {
+            echo 'result<<EOF'
+            printf '%s\n' "$RESULT"
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish executive preview
+        shell: bash
+        env:
+          PREVIEW_RESULT: ${{ steps.preview.outputs.result }}
+        run: |
+          {
+            echo "## Command Center Protected Preview"
+            echo
+            printf '%s\n' "$PREVIEW_RESULT"
+            echo
+            echo "Airtable writes, file creation, correspondence, mailing, and payments were not authorized."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record approved preview success
+        if: ${{ success() && github.event_name == 'issues' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PREVIEW_RESULT: ${{ steps.preview.outputs.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh issue close "$ISSUE_NUMBER" --reason completed --comment "Protected read-only preview completed. Aggregate result: $PREVIEW_RESULT Run: $RUN_URL"
+
+      - name: Record approved preview failure
+        if: ${{ failure() && github.event_name == 'issues' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --body "Protected preview stopped safely. No success was recorded. Inspect: $RUN_URL"
