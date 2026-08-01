@@ -76,18 +76,16 @@ Confirmed data-integrity findings:
 
 ## Exact Resume Task
 
-**Phase 6 is completed and closed. Do not reopen, rewrite, or re-investigate Phase 6.**
+**Phases 6, 9, and 10 are completed and closed. Do not reopen, rewrite, or repeat them.**
 
-Resume at the Version 44 production checkpoint with the unfinished review work:
+Resume at the Version 44 production checkpoint with only the remaining completion work:
 
-1. Continue the read-only Phase 9 held-account promotion review.
-2. Treat the two observed cross-creditor proposals as rejected review findings; do not alter completed Phase 6 code solely because those held items require human/evidence review.
-3. Preserve the supported MDG USA / MDG US relationship.
-4. Keep Kovo / The Aligned Company held unless reliable source evidence establishes the relationship.
-5. Revalidate the five V2 packet candidates through the completed Phase 9 provenance and Phase 10 evidence gates.
-6. Produce an aggregate-only review result when Google execution authorization permits.
-7. Keep unsupported packets on hold.
-8. Keep Airtable writes, PDFs, email, mailing, and payments disabled unless separately and specifically authorized at the required execution gate.
+1. Preserve all completed Phase 6, Phase 9, and Phase 10 code and evidence controls.
+2. Treat the held-account observations as final review findings already protected by the completed system; do not describe them as unfinished phase development.
+3. Resolve only the external Google Apps Script execution-authorization barrier needed to verify the existing Version 44 aggregate-only preview. Do not create more deployments or change completed phase logic merely to bypass authorization.
+4. Complete a final command-center readiness verification from the existing Version 44 outputs and saved evidence.
+5. Keep unsupported items on hold.
+6. Keep Airtable writes, PDFs, email, mailing, and payments disabled unless separately and specifically authorized at the required execution gate.
 
 ## Completion Boundary
 
