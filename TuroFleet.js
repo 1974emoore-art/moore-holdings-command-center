@@ -93,6 +93,11 @@ function analyzeTuroFleet_(records, financeResult) {
         fields['Finance Gate'] || 'Review Required',
       approvalRequired:
         fields['Approval Required'] === true,
+      purchasePrice: Number(fields['Purchase Price']) || 0,
+      monthlyPayment: payment,
+      monthlyRevenue: revenue,
+      monthlyExpenses: expenses,
+      projectedMonthlyNet: revenue - payment - expenses,
       financialPlanComplete: financialPlanComplete,
       financiallyReady: false,
       blockers: []
