@@ -88,6 +88,25 @@ jobs:
             'personalCreditRecordsChanged: false'
           ];
 
+          const personalOnlyViews = [
+            'personalReviewQueue',
+            'personalSafetyFooter',
+            'phase10ReviewPanel'
+          ];
+
+          for (const viewId of personalOnlyViews) {
+            const elementPattern = new RegExp(
+              'id=["\\']' + viewId + '["\\'][\\s\\S]{0,250}' +
+              'data-command-center-module=["\\']personalCreditModule["\\']'
+            );
+
+            if (!elementPattern.test(dashboard)) {
+              throw new Error(
+                'Personal Credit content leaks into other modules: ' + viewId
+              );
+            }
+          }
+
           for (const control of requiredControls) {
             if (!phase8.includes(control)) {
               throw new Error('Phase 8 decision protection is missing: ' + control);
@@ -556,6 +575,10 @@ jobs:
             'event.preventDefault();',
             'panel.hidden = !isActive;',
             "link.classList.toggle('active', isActive);",
+            "document.querySelectorAll(",
+            "'[data-command-center-module]'",
+            "element.hidden = !isActive;",
+            "window.scrollTo({",
             "activateCommandCenterModule(initialModule, false);"
           ];
 
