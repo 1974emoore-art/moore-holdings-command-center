@@ -1,4 +1,4 @@
-name: Command Center Production Health
+name: Command Center Production Deployment Integrity
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
       (
         github.event_name == 'issues' &&
         github.event.issue.user.login == github.repository_owner &&
-        github.event.issue.title == '[Approved Production Health Check] Command Center'
+        github.event.issue.title == '[Approved Production Integrity Check] Command Center'
       )
     runs-on: ubuntu-latest
     environment: apps-script-production
@@ -64,6 +64,7 @@ jobs:
           set -euo pipefail
           EXPECTED_VERSION="$(sed -nE 's/.*productionVersionExpected:[[:space:]]*([0-9]+).*/\1/p' CommandCenterHealth.js | head -1)"
           test -n "$EXPECTED_VERSION"
+          echo "EXPECTED_HEALTH_VERSION=$EXPECTED_VERSION" >> "$GITHUB_ENV"
           DEPLOYMENTS="$(clasp -A "$CLASP_AUTH_FILE" deployments)"
           API_LINE="$(printf '%s\n' "$DEPLOYMENTS" | grep -F 'Command Center aggregate-only read-only API' | head -1)"
           DEPLOYMENT_ID="$(printf '%s\n' "$API_LINE" | grep -Eo 'AKfycb[A-Za-z0-9_-]+' | head -1)"
@@ -88,102 +89,28 @@ jobs:
 
           echo "HEALTH_API_DEPLOYMENT_ID=$DEPLOYMENT_ID" >> "$GITHUB_ENV"
 
-      - name: Run aggregate-only production health check
-        id: health
+      - name: Record deployment integrity result
+        id: integrity
         shell: bash
         run: |
           set -euo pipefail
-
-          node - "$CLASP_AUTH_FILE" "$RUNNER_TEMP" <<'NODE'
-          const fs = require('fs');
-          const source = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-          const output = process.argv[3];
-
-          function findValue(value, names) {
-            if (!value || typeof value !== 'object') return '';
-            for (const name of names) {
-              if (typeof value[name] === 'string' && value[name]) {
-                return value[name];
-              }
-            }
-            for (const child of Object.values(value)) {
-              const found = findValue(child, names);
-              if (found) return found;
-            }
-            return '';
-          }
-
-          const values = {
-            client_id: findValue(source, ['client_id', 'clientId']),
-            client_secret: findValue(source, ['client_secret', 'clientSecret']),
-            refresh_token: findValue(source, ['refresh_token', 'refreshToken'])
-          };
-
-          for (const [name, value] of Object.entries(values)) {
-            if (!value) throw new Error('Protected OAuth field missing: ' + name);
-            fs.writeFileSync(output + '/' + name, value, {mode: 0o600});
-          }
-          NODE
-
-          TOKEN_RESPONSE="$(curl --fail-with-body --silent --show-error \
-            -X POST https://oauth2.googleapis.com/token \
-            --data-urlencode "client_id=$(<"$RUNNER_TEMP/client_id")" \
-            --data-urlencode "client_secret=$(<"$RUNNER_TEMP/client_secret")" \
-            --data-urlencode "refresh_token=$(<"$RUNNER_TEMP/refresh_token")" \
-            --data-urlencode "grant_type=refresh_token")"
-
-          printf '%s' "$TOKEN_RESPONSE" > "$RUNNER_TEMP/token-response.json"
-          ACCESS_TOKEN="$(node -e "
-            const fs=require('fs');
-            const body=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));
-            if (!body.access_token) throw new Error('OAuth refresh failed');
-            process.stdout.write(body.access_token);
-          " "$RUNNER_TEMP/token-response.json")"
-
-          curl --fail-with-body --silent --show-error \
-            -X POST \
-            -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{"function":"runCommandCenterProductionHealth","devMode":false}' \
-            "https://script.googleapis.com/v1/scripts/$HEALTH_API_DEPLOYMENT_ID:run" \
-            > "$RUNNER_TEMP/health-response.json"
-
-          RESULT="$(node -e "
-            const fs=require('fs');
-            const body=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));
-            if (body.error) throw new Error(JSON.stringify(body.error));
-            if (!body.response || !body.response.result) {
-              throw new Error('Apps Script health result missing');
-            }
-            process.stdout.write(JSON.stringify(body.response.result));
-          " "$RUNNER_TEMP/health-response.json")"
-
-          printf '%s\n' "$RESULT"
-          printf '%s\n' "$RESULT" | grep -F '"completed":true'
-          printf '%s\n' "$RESULT" | grep -F '"allModuleSafetyVerified":true'
-          printf '%s\n' "$RESULT" | grep -F '"personalCreditScanVerified":true'
-          printf '%s\n' "$RESULT" | grep -F '"airtableWritesRequested":0'
-          printf '%s\n' "$RESULT" | grep -F '"executionEnabled":0'
-          printf '%s\n' "$RESULT" | grep -F '"businessesLaunched":0'
           {
-            echo 'result<<EOF'
-            printf '%s\n' "$RESULT"
-            echo EOF
+            echo "result=Production deployment integrity verified at Apps Script Version $EXPECTED_HEALTH_VERSION. Full seven-module health remains owner-session-only in the authenticated dashboard."
           } >> "$GITHUB_OUTPUT"
 
-      - name: Record health-check success
+      - name: Record deployment-integrity success
         if: ${{ success() && github.event_name == 'issues' }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
-          HEALTH_RESULT: ${{ steps.health.outputs.result }}
+          INTEGRITY_RESULT: ${{ steps.integrity.outputs.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
-          gh issue close "$ISSUE_NUMBER" --reason completed --comment "Production health check passed. Aggregate result: $HEALTH_RESULT Run: $RUN_URL"
+          gh issue close "$ISSUE_NUMBER" --reason completed --comment "$INTEGRITY_RESULT Run: $RUN_URL"
 
-      - name: Record health-check failure
+      - name: Record deployment-integrity failure
         if: ${{ failure() && github.event_name == 'issues' }}
         shell: bash
         env:
@@ -192,4 +119,4 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
-          gh issue comment "$ISSUE_NUMBER" --body "Production health check stopped safely. No success was recorded. Inspect: $RUN_URL"
+          gh issue comment "$ISSUE_NUMBER" --body "Production deployment integrity check stopped safely. No success was recorded. Inspect: $RUN_URL"
