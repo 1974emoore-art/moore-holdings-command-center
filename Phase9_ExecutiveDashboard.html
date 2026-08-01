@@ -432,6 +432,7 @@
       <a class="module-link" href="#realEstateModule">Real Estate</a>
       <a class="module-link" href="#tradingModule">Trading Research</a>
       <a class="module-link" href="#growthModule">Business Growth</a>
+      <a class="module-link" href="#healthModule">System Health</a>
     </nav>
 
     <div class="toolbar">
@@ -488,6 +489,13 @@
         class="btn-gold"
         onclick="loadGrowthExpansion()">
         Business Growth
+      </button>
+
+      <button
+        id="healthButton"
+        class="btn-neutral"
+        onclick="loadCommandCenterHealth()">
+        System Health
       </button>
 
       <button
@@ -674,6 +682,25 @@
       </div>
       <div id="growthInitiatives" class="footer-note" style="padding:0 18px 8px;">Run the growth summary to load governed initiatives.</div>
       <div id="growthSafety" class="footer-note" style="padding:0 18px 18px;">Run the growth summary to verify production safety controls.</div>
+    </section>
+
+    <section id="healthModule" class="panel" style="margin-bottom:20px;">
+      <div class="panel-header">
+        <div>
+          <h2>Command Center System Health</h2>
+          <div class="card-note">Automatic owner-session verification across every live core module</div>
+        </div>
+        <button class="btn-primary" onclick="loadCommandCenterHealth()">Run Full Health Check</button>
+      </div>
+      <div class="cards" style="padding:18px;margin-bottom:0;">
+        <div class="card"><div class="card-label">Overall Status</div><div id="healthOverall" class="card-value" style="font-size:20px;">Checking…</div><div class="card-note">All module safety controls</div></div>
+        <div class="card"><div class="card-label">Modules Verified</div><div id="healthModules" class="card-value">—</div><div class="card-note">Seven connected cores</div></div>
+        <div class="card"><div class="card-label">Airtable Writes</div><div id="healthWrites" class="card-value">—</div><div class="card-note">Must remain zero</div></div>
+        <div class="card"><div class="card-label">Trading Execution</div><div id="healthTrading" class="card-value">—</div><div class="card-note">Enabled assets must remain zero</div></div>
+        <div class="card"><div class="card-label">Business Launches</div><div id="healthLaunches" class="card-value">—</div><div class="card-note">Authorized launches must remain zero</div></div>
+      </div>
+      <div id="healthSummary" class="footer-note" style="padding:0 18px 8px;">The health check runs automatically when this dashboard opens.</div>
+      <div id="healthSafety" class="footer-note" style="padding:0 18px 18px;">Waiting for owner-session verification.</div>
     </section>
 
     <section class="panel">
@@ -1394,6 +1421,72 @@
     }
 
 
+    function loadCommandCenterHealth() {
+      const button = document.getElementById('healthButton');
+      if (button) button.disabled = true;
+      setText('healthOverall', 'Checking…');
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (button) button.disabled = false;
+          const modules = result && result.modules ? result.modules : {};
+          const safety = result && result.safety ? result.safety : {};
+          const verifiedModules = [
+            modules.personalCredit,
+            modules.businessCredit,
+            modules.financeCashFlow,
+            modules.turoFleet,
+            modules.realEstate,
+            modules.tradingResearch,
+            modules.growthExpansion
+          ].filter(function(module) {
+            return module && typeof module === 'object';
+          }).length;
+
+          setText('healthOverall', result.completed === true ? 'HEALTHY' : 'REVIEW REQUIRED');
+          setText('healthModules', verifiedModules + ' / 7');
+          setText('healthWrites', safety.airtableWritesRequested || 0);
+          setText('healthTrading',
+            modules.tradingResearch && modules.tradingResearch.executionEnabled || 0);
+          setText('healthLaunches', safety.businessesLaunched || 0);
+
+          document.getElementById('healthSummary').textContent =
+            'Personal Credit: ' + (modules.personalCredit && modules.personalCredit.records || 0) +
+            ' records | Business Credit: ' + (modules.businessCredit && modules.businessCredit.records || 0) +
+            ' records | Finance Ledger: ' + (modules.financeCashFlow && modules.financeCashFlow.records || 0) +
+            ' records | Turo: ' + (modules.turoFleet && modules.turoFleet.vehicles || 0) +
+            ' vehicles | Real Estate: ' + (modules.realEstate && modules.realEstate.markets || 0) +
+            ' markets | Trading: ' + (modules.tradingResearch && modules.tradingResearch.assets || 0) +
+            ' assets | Growth: ' + (modules.growthExpansion && modules.growthExpansion.initiatives || 0) +
+            ' initiatives';
+
+          const safe = result.completed === true &&
+            safety.allModuleSafetyVerified === true &&
+            safety.airtableWritesRequested === 0 &&
+            safety.airtableRecordsChanged === 0 &&
+            safety.messagesSent === 0 &&
+            safety.applicationsSubmitted === 0 &&
+            safety.contractsAuthorized === 0 &&
+            safety.purchasesAuthorized === 0 &&
+            safety.paymentsAuthorized === 0 &&
+            safety.paperOrdersSubmitted === 0 &&
+            safety.liveOrdersSubmitted === 0 &&
+            safety.businessesLaunched === 0;
+
+          document.getElementById('healthSafety').textContent = safe
+            ? 'Production safety verified across all modules: zero writes and zero unauthorized external actions.'
+            : 'System health requires review before any governed action.';
+        })
+        .withFailureHandler(function(error) {
+          if (button) button.disabled = false;
+          setText('healthOverall', 'CHECK FAILED');
+          document.getElementById('healthSafety').textContent =
+            error && error.message ? error.message : 'Health check could not complete.';
+        })
+        .runCommandCenterProductionHealth();
+    }
+
+
     function showPendingOnly() {
       document.getElementById(
         'decisionFilter'
@@ -1993,6 +2086,7 @@
     'DOMContentLoaded',
     function() {
       loadPhase10ReviewQueue();
+      loadCommandCenterHealth();
     }
   );
 </script>
