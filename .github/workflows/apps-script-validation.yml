@@ -526,3 +526,59 @@ jobs:
             'Health and read-only preview both target Version 59.'
           );
           NODE
+
+
+      - name: Verify dashboard module-tab navigation
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const dashboard = fs.readFileSync(
+            'Phase9_ExecutiveDashboard.html',
+            'utf8'
+          );
+
+          const moduleIds = [
+            'personalCreditModule',
+            'businessCreditModule',
+            'financeModule',
+            'turoModule',
+            'realEstateModule',
+            'tradingModule',
+            'growthModule',
+            'healthModule'
+          ];
+
+          const requiredControls = [
+            'function activateCommandCenterModule(moduleId, loadModule)',
+            'function initializeCommandCenterTabs()',
+            'event.preventDefault();',
+            'panel.hidden = !isActive;',
+            "link.classList.toggle('active', isActive);",
+            "activateCommandCenterModule(initialModule, false);"
+          ];
+
+          for (const moduleId of moduleIds) {
+            if (
+              !dashboard.includes('href="#' + moduleId + '"') ||
+              !dashboard.includes(moduleId + ':')
+            ) {
+              throw new Error(
+                'Dashboard module tab is not wired: ' + moduleId
+              );
+            }
+          }
+
+          for (const control of requiredControls) {
+            if (!dashboard.includes(control)) {
+              throw new Error(
+                'Dashboard module-tab control is missing: ' + control
+              );
+            }
+          }
+
+          console.log(
+            'All eight Command Center dashboard tabs are wired.'
+          );
+          NODE
