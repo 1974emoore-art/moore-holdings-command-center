@@ -1,0 +1,120 @@
+name: Apps Script Read-Only API Deployment and Preview
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: command-center-read-only-api
+  cancel-in-progress: false
+
+jobs:
+  deploy-and-preview:
+    if: >-
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[Approved Read-Only API Deploy and Preview] Phase 9 and Phase 10'
+    runs-on: ubuntu-latest
+    environment: apps-script-production
+    steps:
+      - name: Require protected authorization
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$CLASPRC_JSON"
+
+      - name: Check out authoritative main
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install compatible Apps Script CLI
+        run: npm install --global @google/clasp@3.3.0
+
+      - name: Prepare protected authorization
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          AUTH_FILE="$RUNNER_TEMP/clasprc.json"
+          printf '%s' "$CLASPRC_JSON" > "$AUTH_FILE"
+          chmod 600 "$AUTH_FILE"
+          echo "CLASP_AUTH_FILE=$AUTH_FILE" >> "$GITHUB_ENV"
+
+      - name: Verify deployed source mapping
+        run: clasp -A "$CLASP_AUTH_FILE" status
+
+      - name: Create separate API-executable deployment
+        id: api_deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUTPUT="$(clasp -A "$CLASP_AUTH_FILE" deploy --description 'Command Center aggregate-only read-only API')"
+          printf '%s\n' "$OUTPUT"
+          DEPLOYMENT_ID="$(printf '%s\n' "$OUTPUT" | grep -Eo 'AKfycb[A-Za-z0-9_-]+' | head -1)"
+          test -n "$DEPLOYMENT_ID"
+          if [ "$DEPLOYMENT_ID" = "AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw" ]; then
+            echo "Refusing to treat the production web deployment as the API deployment."
+            exit 1
+          fi
+          echo "deployment_id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Verify production web deployment remains Version 44
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPLOYMENTS="$(clasp -A "$CLASP_AUTH_FILE" deployments)"
+          printf '%s\n' "$DEPLOYMENTS"
+          printf '%s\n' "$DEPLOYMENTS" | grep -F 'AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw @44'
+
+      - name: Run aggregate-only protected preview
+        id: preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          RESULT="$(clasp -A "$CLASP_AUTH_FILE" run runCommandCenterReadOnlyPreview --nondev)"
+          printf '%s\n' "$RESULT"
+          printf '%s\n' "$RESULT" | grep -F '"airtableWritesRequested":0'
+          printf '%s\n' "$RESULT" | grep -F '"airtableRecordsChanged":0'
+          printf '%s\n' "$RESULT" | grep -F '"filesCreated":0'
+          printf '%s\n' "$RESULT" | grep -F '"pdfsCreated":0'
+          printf '%s\n' "$RESULT" | grep -F '"messagesSent":0'
+          printf '%s\n' "$RESULT" | grep -F '"paymentsAuthorized":0'
+          {
+            echo 'result<<EOF'
+            printf '%s\n' "$RESULT"
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Record completion
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PREVIEW_RESULT: ${{ steps.preview.outputs.result }}
+          API_DEPLOYMENT_ID: ${{ steps.api_deploy.outputs.deployment_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh issue close "$ISSUE_NUMBER" --reason completed --comment "Read-only API deployment verified and protected preview completed. API deployment: $API_DEPLOYMENT_ID. Aggregate result: $PREVIEW_RESULT Run: $RUN_URL"
+
+      - name: Record safe failure
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --body "Read-only API deployment or preview stopped safely. No preview success was recorded. Inspect: $RUN_URL"
