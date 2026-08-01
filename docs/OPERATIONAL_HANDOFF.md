@@ -6,8 +6,10 @@
 - Protected branch: `main`
 - Apps Script project: `10_VITKZtmyVRU1PXnomHw6oeNd1YGkJbrujKsCGurtyIKYXu9-UHUTF8`
 - Production deployment: `AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw`
-- Verified production baseline: Apps Script Version 43
-- Verified production commit: `74c229ff4cc9b98ca24bc68a1fbfdba9070372be`
+- Current repository baseline: Apps Script Version 57
+- Current repository commit: `03e41d689bbfaa573e74397504f722d873454588`
+- Last production baseline documented with evidence in this handoff: Apps Script Version 43 (`74c229ff4cc9b98ca24bc68a1fbfdba9070372be`)
+- Version 57 production status: requires owner-session dashboard health confirmation before being recorded here as verified production
 - Live-write default: disarmed
 
 ## Normal operating path
@@ -110,6 +112,21 @@ The five generated packets cover Jefferson Capital Systems, LLC for Experian and
 - Airtable live writes remain disarmed.
 - No correspondence or mailing action occurred during deployment.
 
+### Unified Command Center core — August 1, 2026
+
+- Current repository version target: 57
+- Current repository commit: `03e41d689bbfaa573e74397504f722d873454588`
+- Connected dashboard cores: Personal Credit, Business Credit, Finance & Cash Flow, Turo Fleet, Real Estate, Trading Research, and Business Growth & Expansion
+- Automatic owner-session System Health panel: implemented
+- Pull-request validation run: `30696050234`
+- Pull-request validation result: passed
+- Open pull requests after merge: zero
+- Airtable live writes: disarmed
+- Governed external actions: zero
+
 ## Current controlled execution step
 
-Run `runPhase9HeldAccountPromotionReview()` against Version 43. Then run `runPhase10FinalSystemCompletion()` only as a protected preview. Review the returned promotion candidates, held records, supported drafts, and blockers before any PDF-production authorization. This step must not update Airtable, mail correspondence, or alter certified-mail tracking.
+1. Open the authenticated production dashboard and allow the Version 57 System Health panel to run.
+2. Record Version 57 as verified production only if it reports **HEALTHY**, **7 / 7** modules, zero Airtable writes, zero trading execution, and zero business launches.
+3. If any value fails, keep live writes disarmed and follow `PRODUCTION_RECOVERY.md`.
+4. Continue the separate collector-evidence review in issue #33 without acknowledging debt, sending correspondence, changing Airtable, or altering certified-mail tracking until account mapping is verified.
