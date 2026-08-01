@@ -428,6 +428,7 @@
       <a class="module-link" href="#personalCreditModule">Personal Credit</a>
       <a class="module-link" href="#businessCreditModule">Business Credit</a>
       <a class="module-link" href="#financeModule">Finance &amp; Cash Flow</a>
+      <a class="module-link" href="#turoModule">Turo Fleet</a>
     </nav>
 
     <div class="toolbar">
@@ -456,6 +457,13 @@
         class="btn-gold"
         onclick="loadFinanceCashFlow()">
         Finance &amp; Cash Flow
+      </button>
+
+      <button
+        id="turoButton"
+        class="btn-gold"
+        onclick="loadTuroFleet()">
+        Turo Fleet
       </button>
 
       <button
@@ -558,6 +566,26 @@
         <div class="card"><div class="card-label">Scaling Gate</div><div id="financeScalingGate" class="card-value" style="font-size:20px;">—</div><div class="card-note">Cash-flow governance status</div></div>
       </div>
       <div id="financeSafety" class="footer-note" style="padding:0 18px 18px;">Run the finance summary to verify production safety controls.</div>
+    </section>
+
+    <section id="turoModule" class="panel" style="margin-bottom:20px;">
+      <div class="panel-header">
+        <div>
+          <h2>Turo Fleet</h2>
+          <div class="card-note">Vehicle research and acquisition readiness • Finance-gated</div>
+        </div>
+        <button class="btn-primary" onclick="loadTuroFleet()">Refresh Turo Fleet</button>
+      </div>
+      <div class="cards" style="padding:18px;margin-bottom:0;">
+        <div class="card"><div class="card-label">Tracked Vehicles</div><div id="turoTracked" class="card-value">—</div><div class="card-note">Research through operations</div></div>
+        <div class="card"><div class="card-label">In Research</div><div id="turoResearch" class="card-value">—</div><div class="card-note">Target vehicles under review</div></div>
+        <div class="card"><div class="card-label">Active Fleet</div><div id="turoActive" class="card-value">—</div><div class="card-note">Vehicles currently operating</div></div>
+        <div class="card"><div class="card-label">Approval Required</div><div id="turoApprovals" class="card-value">—</div><div class="card-note">CEO acquisition gate</div></div>
+        <div class="card"><div class="card-label">Acquisition Gate</div><div id="turoAcquisitionGate" class="card-value" style="font-size:20px;">—</div><div class="card-note">Controlled by Finance readiness</div></div>
+        <div class="card"><div class="card-label">Active Monthly Net</div><div id="turoMonthlyNet" class="card-value">—</div><div class="card-note">Revenue less payment and expenses</div></div>
+      </div>
+      <div id="turoTargets" class="footer-note" style="padding:0 18px 8px;">Run the fleet summary to load governed targets.</div>
+      <div id="turoSafety" class="footer-note" style="padding:0 18px 18px;">Run the fleet summary to verify production safety controls.</div>
     </section>
 
     <section class="panel">
@@ -1042,6 +1070,58 @@
     function formatCurrency(value) {
       const amount = Number(value) || 0;
       return '$' + amount.toFixed(2);
+    }
+
+
+    function loadTuroFleet() {
+      const button = document.getElementById('turoButton');
+      if (button) button.disabled = true;
+      showMessage('Loading the governed Turo Fleet summary...', 'info');
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (button) button.disabled = false;
+          const summary = result && result.summary ? result.summary : {};
+          const readiness = result && result.readiness ? result.readiness : {};
+          const safety = result && result.safety ? result.safety : {};
+          const targets = result && Array.isArray(result.targets)
+            ? result.targets
+            : [];
+
+          setText('turoTracked', summary.trackedVehicles || 0);
+          setText('turoResearch', summary.research || 0);
+          setText('turoActive', summary.active || 0);
+          setText('turoApprovals', summary.approvalRequired || 0);
+          setText('turoAcquisitionGate', readiness.acquisitionGate || 'Review Required');
+          setText('turoMonthlyNet', formatCurrency(summary.activeMonthlyNet));
+
+          document.getElementById('turoTargets').textContent = targets.length
+            ? 'Targets: ' + targets.map(function(target) {
+                return target.vehicle + ' — ' + target.status +
+                  ' — Finance Gate: ' + target.financeGate;
+              }).join(' | ')
+            : 'No Turo vehicles are currently tracked.';
+
+          const safe = safety.readOnly === true &&
+            safety.airtableWritesRequested === 0 &&
+            safety.airtableRecordsChanged === 0 &&
+            safety.vehiclePurchasesAuthorized === 0 &&
+            safety.financingApplicationsSubmitted === 0 &&
+            safety.depositsAuthorized === 0 &&
+            safety.paymentsAuthorized === 0 &&
+            readiness.acquisitionAuthorized === false;
+
+          document.getElementById('turoSafety').textContent = safe
+            ? 'Safety verified: read-only; zero vehicle purchases, financing applications, deposits, and payments.'
+            : 'Turo safety verification requires review.';
+
+          showMessage('Turo Fleet summary refreshed successfully.', 'success');
+        })
+        .withFailureHandler(function(error) {
+          if (button) button.disabled = false;
+          handleFailure(error);
+        })
+        .scanTuroFleet();
     }
 
 
