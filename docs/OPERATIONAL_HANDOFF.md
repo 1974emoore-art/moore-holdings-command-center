@@ -6,8 +6,8 @@
 - Protected branch: `main`
 - Apps Script project: `10_VITKZtmyVRU1PXnomHw6oeNd1YGkJbrujKsCGurtyIKYXu9-UHUTF8`
 - Production deployment: `AKfycbzXYZJv9gjhPFJpxPBizyci5Dp6ak0putViUSZ6Olurc_MhpZ1wmS9tfg20unaIKcszSw`
-- Verified production baseline: Apps Script Version 38
-- Verified production commit: `fd8aff1a71cc56617cf87efb451e9a6fa80380ab`
+- Verified production baseline: Apps Script Version 43
+- Verified production commit: `74c229ff4cc9b98ca24bc68a1fbfdba9070372be`
 - Live-write default: disarmed
 
 ## Normal operating path
@@ -97,3 +97,19 @@ Follow [PRODUCTION_RECOVERY.md](PRODUCTION_RECOVERY.md). While a production inci
 - Airtable live writes: disarmed
 
 The five generated packets cover Jefferson Capital Systems, LLC for Experian and Equifax, and MDG US INC for Experian, TransUnion, and Equifax. Physical printing, enclosure assembly, signature, certified mailing, and tracking entry remain separate fulfillment steps.
+
+
+### Reliable source-page evidence gate — July 31, 2026
+
+- Apps Script production version: 43
+- GitHub commit: `74c229ff4cc9b98ca24bc68a1fbfdba9070372be`
+- Phase 9 now joins held-account candidates to the live credit-report parser.
+- Phase 10 packet approval requires a matching bureau, reliable account reference, valid source-report page, located report section, and MEDIUM or HIGH parser confidence.
+- Missing, ambiguous, or LOW-confidence source evidence remains blocked.
+- Previously generated Version 38 packets must be revalidated before printing or mailing.
+- Airtable live writes remain disarmed.
+- No correspondence or mailing action occurred during deployment.
+
+## Current controlled execution step
+
+Run `runPhase9HeldAccountPromotionReview()` against Version 43. Then run `runPhase10FinalSystemCompletion()` only as a protected preview. Review the returned promotion candidates, held records, supported drafts, and blockers before any PDF-production authorization. This step must not update Airtable, mail correspondence, or alter certified-mail tracking.
