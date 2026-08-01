@@ -430,6 +430,7 @@
       <a class="module-link" href="#financeModule">Finance &amp; Cash Flow</a>
       <a class="module-link" href="#turoModule">Turo Fleet</a>
       <a class="module-link" href="#realEstateModule">Real Estate</a>
+      <a class="module-link" href="#tradingModule">Trading Research</a>
     </nav>
 
     <div class="toolbar">
@@ -472,6 +473,13 @@
         class="btn-gold"
         onclick="loadRealEstateMarkets()">
         Real Estate
+      </button>
+
+      <button
+        id="tradingButton"
+        class="btn-gold"
+        onclick="loadTradingResearch()">
+        Trading Research
       </button>
 
       <button
@@ -616,6 +624,27 @@
       </div>
       <div id="realEstateMarkets" class="footer-note" style="padding:0 18px 8px;">Run the market summary to load governed markets.</div>
       <div id="realEstateSafety" class="footer-note" style="padding:0 18px 18px;">Run the market summary to verify production safety controls.</div>
+    </section>
+
+    <section id="tradingModule" class="panel" style="margin-bottom:20px;">
+      <div class="panel-header">
+        <div>
+          <h2>Trading &amp; Investment Research</h2>
+          <div class="card-note">Long-term research watchlist • Finance-, risk-, and CEO-gated • Execution locked</div>
+        </div>
+        <button class="btn-primary" onclick="loadTradingResearch()">Refresh Trading Research</button>
+      </div>
+      <div class="cards" style="padding:18px;margin-bottom:0;">
+        <div class="card"><div class="card-label">Tracked Assets</div><div id="tradingTracked" class="card-value">—</div><div class="card-note">Research watchlist</div></div>
+        <div class="card"><div class="card-label">High Conviction</div><div id="tradingConviction" class="card-value">—</div><div class="card-note">Priority research candidates</div></div>
+        <div class="card"><div class="card-label">Watch</div><div id="tradingWatch" class="card-value">—</div><div class="card-note">Assets retained for monitoring</div></div>
+        <div class="card"><div class="card-label">Speculative</div><div id="tradingSpeculative" class="card-value">—</div><div class="card-note">Highest caution tier</div></div>
+        <div class="card"><div class="card-label">Research Complete</div><div id="tradingComplete" class="card-value">—</div><div class="card-note">Risk review completed</div></div>
+        <div class="card"><div class="card-label">Financially Ready</div><div id="tradingReady" class="card-value">—</div><div class="card-note">All gates satisfied</div></div>
+        <div class="card"><div class="card-label">Execution Gate</div><div id="tradingGate" class="card-value" style="font-size:20px;">—</div><div class="card-note">Trading stays disabled</div></div>
+      </div>
+      <div id="tradingAssets" class="footer-note" style="padding:0 18px 8px;">Run the research summary to load governed assets.</div>
+      <div id="tradingSafety" class="footer-note" style="padding:0 18px 18px;">Run the research summary to verify production safety controls.</div>
     </section>
 
     <section class="panel">
@@ -1215,6 +1244,65 @@
           handleFailure(error);
         })
         .scanRealEstateMarkets();
+    }
+
+
+    function loadTradingResearch() {
+      const button = document.getElementById('tradingButton');
+      if (button) button.disabled = true;
+      showMessage('Loading governed Trading & Investment Research...', 'info');
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (button) button.disabled = false;
+          const summary = result && result.summary ? result.summary : {};
+          const readiness = result && result.readiness ? result.readiness : {};
+          const safety = result && result.safety ? result.safety : {};
+          const assets = result && Array.isArray(result.assets)
+            ? result.assets
+            : [];
+
+          setText('tradingTracked', summary.trackedAssets || 0);
+          setText('tradingConviction', summary.highConviction || 0);
+          setText('tradingWatch', summary.watch || 0);
+          setText('tradingSpeculative', summary.speculative || 0);
+          setText('tradingComplete', summary.researchComplete || 0);
+          setText('tradingReady', summary.financiallyReady || 0);
+          setText('tradingGate', readiness.executionGate || 'Locked');
+
+          document.getElementById('tradingAssets').textContent = assets.length
+            ? assets.map(function(asset) {
+                const readinessText = asset.financiallyReady
+                  ? 'FINANCIALLY READY'
+                  : 'NOT READY — ' + asset.blockers.join('; ');
+                return asset.symbol + ' (' + asset.asset + ') — ' + readinessText;
+              }).join(' | ')
+            : 'No Trading & Investment Research assets are currently tracked.';
+
+          const safe = safety.readOnly === true &&
+            safety.airtableWritesRequested === 0 &&
+            safety.airtableRecordsChanged === 0 &&
+            safety.brokerConnectionsOpened === 0 &&
+            safety.marketOrdersSubmitted === 0 &&
+            safety.limitOrdersSubmitted === 0 &&
+            safety.paperOrdersSubmitted === 0 &&
+            safety.liveOrdersSubmitted === 0 &&
+            safety.depositsAuthorized === 0 &&
+            safety.transfersAuthorized === 0 &&
+            readiness.liveTradingAuthorized === false &&
+            readiness.paperTradingAuthorized === false;
+
+          document.getElementById('tradingSafety').textContent = safe
+            ? 'Safety verified: research-only; zero broker connections, paper/live orders, deposits, and transfers.'
+            : 'Trading safety verification requires review.';
+
+          showMessage('Trading & Investment Research refreshed successfully.', 'success');
+        })
+        .withFailureHandler(function(error) {
+          if (button) button.disabled = false;
+          handleFailure(error);
+        })
+        .scanTradingResearch();
     }
 
 
