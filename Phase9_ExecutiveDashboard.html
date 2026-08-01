@@ -581,6 +581,7 @@
         <div class="card"><div class="card-label">In Research</div><div id="turoResearch" class="card-value">—</div><div class="card-note">Target vehicles under review</div></div>
         <div class="card"><div class="card-label">Active Fleet</div><div id="turoActive" class="card-value">—</div><div class="card-note">Vehicles currently operating</div></div>
         <div class="card"><div class="card-label">Approval Required</div><div id="turoApprovals" class="card-value">—</div><div class="card-note">CEO acquisition gate</div></div>
+        <div class="card"><div class="card-label">Financially Ready</div><div id="turoFinanciallyReady" class="card-value">—</div><div class="card-note">All vehicle gates satisfied</div></div>
         <div class="card"><div class="card-label">Acquisition Gate</div><div id="turoAcquisitionGate" class="card-value" style="font-size:20px;">—</div><div class="card-note">Controlled by Finance readiness</div></div>
         <div class="card"><div class="card-label">Active Monthly Net</div><div id="turoMonthlyNet" class="card-value">—</div><div class="card-note">Revenue less payment and expenses</div></div>
       </div>
@@ -1092,13 +1093,20 @@
           setText('turoResearch', summary.research || 0);
           setText('turoActive', summary.active || 0);
           setText('turoApprovals', summary.approvalRequired || 0);
+          setText('turoFinanciallyReady', summary.financiallyReady || 0);
           setText('turoAcquisitionGate', readiness.acquisitionGate || 'Review Required');
           setText('turoMonthlyNet', formatCurrency(summary.activeMonthlyNet));
 
           document.getElementById('turoTargets').textContent = targets.length
-            ? 'Targets: ' + targets.map(function(target) {
-                return target.vehicle + ' — ' + target.status +
-                  ' — Finance Gate: ' + target.financeGate;
+            ? targets.map(function(target) {
+                const color = target.color
+                  ? target.color + ' '
+                  : '';
+                const readinessText = target.financiallyReady
+                  ? 'FINANCIALLY READY'
+                  : 'NOT READY — ' + target.blockers.join('; ');
+                return '#' + target.acquisitionOrder + ' ' +
+                  color + target.vehicle + ' — ' + readinessText;
               }).join(' | ')
             : 'No Turo vehicles are currently tracked.';
 
