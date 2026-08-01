@@ -63,7 +63,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          RESULT="$(clasp -A "$CLASP_AUTH_FILE" run runCommandCenterProductionHealth --nondev)"
+          RESULT="$(clasp -A "$CLASP_AUTH_FILE" run runCommandCenterProductionHealth)"
           printf '%s\n' "$RESULT"
           printf '%s\n' "$RESULT" | grep -F '"completed":true'
           printf '%s\n' "$RESULT" | grep -F '"allModuleSafetyVerified":true'
