@@ -76,19 +76,17 @@ Confirmed data-integrity findings:
 
 ## Exact Resume Task
 
-Resume with the narrow matching-integrity correction:
+**Phase 6 is completed and closed. Do not reopen, rewrite, or re-investigate Phase 6.**
 
-1. Locate the Phase 6 candidate scoring and role-validation logic used by Phase 7.
-2. Make creditor/account-identity conflicts a hard blocker so balance or bureau similarities cannot produce cross-creditor matches.
-3. Preserve controlled normalization for genuine name variants such as MDG USA / MDG US.
-4. Add regression coverage for:
-   - Jefferson must not match Celtic Bank / Surge.
-   - Affirm must not match SC Department of Social Services.
-   - MDG variants may match the verified MDG record.
-   - Kovo / The Aligned Company remains held without reliable account evidence.
-5. Run repository validation and GitHub checks.
-6. Prepare the focused change for review.
-7. Only after the correction is validated, re-run the read-only held-account and five V2 packet-candidate review.
+Resume at the Version 44 production checkpoint with the unfinished review work:
+
+1. Continue the read-only Phase 9 held-account promotion review.
+2. Treat the two observed cross-creditor proposals as rejected review findings; do not alter completed Phase 6 code solely because those held items require human/evidence review.
+3. Preserve the supported MDG USA / MDG US relationship.
+4. Keep Kovo / The Aligned Company held unless reliable source evidence establishes the relationship.
+5. Revalidate the five V2 packet candidates through the completed Phase 9 provenance and Phase 10 evidence gates.
+6. Produce an aggregate-only review result when Google execution authorization permits.
+7. Keep unsupported packets on hold.
 8. Keep Airtable writes, PDFs, email, mailing, and payments disabled unless separately and specifically authorized at the required execution gate.
 
 ## Completion Boundary
