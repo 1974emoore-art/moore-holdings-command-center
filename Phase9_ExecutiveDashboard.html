@@ -427,6 +427,7 @@
     <nav class="module-nav" aria-label="Live command center modules">
       <a class="module-link" href="#personalCreditModule">Personal Credit</a>
       <a class="module-link" href="#businessCreditModule">Business Credit</a>
+      <a class="module-link" href="#financeModule">Finance &amp; Cash Flow</a>
     </nav>
 
     <div class="toolbar">
@@ -448,6 +449,13 @@
         class="btn-gold"
         onclick="loadBusinessCredit()">
         Business Credit Summary
+      </button>
+
+      <button
+        id="financeButton"
+        class="btn-gold"
+        onclick="loadFinanceCashFlow()">
+        Finance &amp; Cash Flow
       </button>
 
       <button
@@ -530,6 +538,26 @@
         <div class="card"><div class="card-label">Financing Gates Clear</div><div id="businessClearGates" class="card-value">—</div><div class="card-note">Eligible for later review</div></div>
       </div>
       <div id="businessSafety" class="footer-note" style="padding:0 18px 18px;">Run the summary to verify production safety controls.</div>
+    </section>
+
+    <section id="financeModule" class="panel" style="margin-bottom:20px;">
+      <div class="panel-header">
+        <div>
+          <h2>Finance &amp; Cash Flow</h2>
+          <div class="card-note">Live governed Finance Ledger summary • read-only</div>
+        </div>
+        <button class="btn-primary" onclick="loadFinanceCashFlow()">Refresh Finance</button>
+      </div>
+      <div class="cards" style="padding:18px;margin-bottom:0;">
+        <div class="card"><div class="card-label">Cleared Income</div><div id="financeIncome" class="card-value">—</div><div class="card-note">Actual cleared inflow</div></div>
+        <div class="card"><div class="card-label">Cleared Expenses</div><div id="financeExpenses" class="card-value">—</div><div class="card-note">Actual cleared outflow</div></div>
+        <div class="card"><div class="card-label">Net Cash Flow</div><div id="financeNet" class="card-value">—</div><div class="card-note">Cleared income less expenses</div></div>
+        <div class="card"><div class="card-label">Pending Expenses</div><div id="financePendingExpenses" class="card-value">—</div><div class="card-note">Not yet cleared</div></div>
+        <div class="card"><div class="card-label">Planned Expenses</div><div id="financePlannedExpenses" class="card-value">—</div><div class="card-note">Future commitments tracked</div></div>
+        <div class="card"><div class="card-label">Approval Required</div><div id="financeApprovals" class="card-value">—</div><div class="card-note">CEO review gate</div></div>
+        <div class="card"><div class="card-label">Scaling Gate</div><div id="financeScalingGate" class="card-value" style="font-size:20px;">—</div><div class="card-note">Cash-flow governance status</div></div>
+      </div>
+      <div id="financeSafety" class="footer-note" style="padding:0 18px 18px;">Run the finance summary to verify production safety controls.</div>
     </section>
 
     <section class="panel">
@@ -962,6 +990,662 @@
           handleFailure(error);
         })
         .scanBusinessCredit();
+    }
+
+
+    function loadFinanceCashFlow() {
+      const button = document.getElementById('financeButton');
+      if (button) button.disabled = true;
+      showMessage('Loading the live read-only Finance & Cash Flow summary...', 'info');
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (button) button.disabled = false;
+          const summary = result && result.summary ? result.summary : {};
+          const readiness = result && result.readiness ? result.readiness : {};
+          const safety = result && result.safety ? result.safety : {};
+
+          setText('financeIncome', formatCurrency(summary.clearedIncome));
+          setText('financeExpenses', formatCurrency(summary.clearedExpenses));
+          setText('financeNet', formatCurrency(summary.netCashFlow));
+          setText('financePendingExpenses', formatCurrency(summary.pendingExpenses));
+          setText('financePlannedExpenses', formatCurrency(summary.plannedExpenses));
+          setText('financeApprovals', summary.approvalRequired || 0);
+          setText('financeScalingGate', readiness.scalingGate || 'Review Required');
+
+          const safe = safety.readOnly === true &&
+            safety.airtableWritesRequested === 0 &&
+            safety.airtableRecordsChanged === 0 &&
+            safety.financingApplicationsSubmitted === 0 &&
+            safety.capitalExpendituresAuthorized === 0 &&
+            safety.purchasesAuthorized === 0 &&
+            safety.paymentsAuthorized === 0;
+
+          const dataMessage = readiness.hasData
+            ? 'Finance Ledger connected.'
+            : 'Finance Ledger connected; no transactions entered yet.';
+
+          document.getElementById('financeSafety').textContent = safe
+            ? dataMessage + ' Safety verified: read-only; zero writes, financing, capital expenditures, purchases, and payments.'
+            : 'Finance safety verification requires review.';
+
+          showMessage('Finance & Cash Flow summary refreshed successfully.', 'success');
+        })
+        .withFailureHandler(function(error) {
+          if (button) button.disabled = false;
+          handleFailure(error);
+        })
+        .scanFinanceCashFlow();
+    }
+
+
+    function formatCurrency(value) {
+      const amount = Number(value) || 0;
+      return '
+      document.getElementById(
+        'decisionFilter'
+      ).value = 'Pending';
+
+      applyFilters();
+    }
+
+
+    function showHighPriority() {
+      document.getElementById(
+        'priorityFilter'
+      ).value = 'High';
+
+      applyFilters();
+    }
+
+
+    function resetFilters() {
+      document.getElementById(
+        'priorityFilter'
+      ).value = '';
+
+      document.getElementById(
+        'decisionFilter'
+      ).value = '';
+
+      document.getElementById(
+        'searchBox'
+      ).value = '';
+
+      applyFilters();
+    }
+
+
+    function setLoadingState() {
+      const tbody =
+        document.getElementById('reviewRows');
+
+      tbody.innerHTML =
+        '<tr><td colspan="9" class="loading">' +
+        'Loading review records...' +
+        '</td></tr>';
+    }
+
+
+    function appendCell(row, value) {
+      const cell = document.createElement('td');
+
+      cell.textContent =
+        value === null ||
+        value === undefined ||
+        value === ''
+          ? '—'
+          : String(value);
+
+      row.appendChild(cell);
+    }
+
+
+    function createPill(text, className) {
+      const pill = document.createElement('span');
+
+      pill.className = 'pill ' + className;
+      pill.textContent = text || 'Pending';
+
+      return pill;
+    }
+
+
+    function priorityPillClass(priority) {
+      if (priority === 'High') {
+        return 'pill-high';
+      }
+
+      if (priority === 'Low') {
+        return 'pill-low';
+      }
+
+      return 'pill-medium';
+    }
+
+
+    function decisionPillClass(decision) {
+      if (decision === 'Approved') {
+        return 'pill-approved';
+      }
+
+      if (decision === 'Rejected') {
+        return 'pill-rejected';
+      }
+
+      if (decision === 'Hold') {
+        return 'pill-hold';
+      }
+
+      return 'pill-pending';
+    }
+
+
+    function setText(id, value) {
+      document.getElementById(id).textContent =
+        String(value);
+    }
+
+
+    function showMessage(message, type) {
+      const box =
+        document.getElementById('message');
+
+      box.textContent = message;
+      box.className =
+        'message message-' + type;
+    }
+
+
+    function handleFailure(error) {
+      const message =
+        error && error.message
+          ? error.message
+          : String(error);
+
+      showMessage(
+        'Error: ' + message,
+        'error'
+      );
+    }
+
+
+    window.addEventListener(
+      'load',
+      loadDashboard
+    );
+  </script>
+<!-- PHASE 10 — LETTER REVIEW PANEL -->
+<section id="phase10ReviewPanel" style="
+  margin:24px auto;
+  padding:20px;
+  max-width:1100px;
+  background:#fff;
+  border:2px solid #17365d;
+  border-radius:14px;
+  box-shadow:0 4px 14px rgba(0,0,0,.12);
+">
+  <div style="
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    flex-wrap:wrap;
+  ">
+    <div>
+      <h2 style="margin:0;color:#17365d;">
+        Phase 10 Letter Review
+      </h2>
+
+      <p style="margin:6px 0 0;color:#555;">
+        Review each draft and select Approve, Reject, or Hold.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      id="phase10RefreshButton"
+      onclick="loadPhase10ReviewQueue()"
+      style="
+        padding:10px 16px;
+        border:0;
+        border-radius:8px;
+        background:#17365d;
+        color:#fff;
+        font-weight:700;
+        cursor:pointer;
+      "
+    >
+      Refresh Drafts
+    </button>
+  </div>
+
+  <div id="phase10Summary" style="
+    margin-top:18px;
+    padding:12px;
+    background:#eef4fb;
+    border-radius:8px;
+    color:#17365d;
+    font-weight:700;
+  ">
+    Loading Phase 10 drafts...
+  </div>
+
+  <div id="phase10Message" style="
+    display:none;
+    margin-top:14px;
+    padding:12px;
+    border-radius:8px;
+    font-weight:700;
+  "></div>
+
+  <div id="phase10DraftList" style="margin-top:18px;"></div>
+</section>
+
+<script>
+  function loadPhase10ReviewQueue() {
+    const summaryBox =
+      document.getElementById('phase10Summary');
+
+    const draftList =
+      document.getElementById('phase10DraftList');
+
+    const refreshButton =
+      document.getElementById('phase10RefreshButton');
+
+    summaryBox.textContent =
+      'Loading Phase 10 drafts...';
+
+    draftList.innerHTML = '';
+    refreshButton.disabled = true;
+    refreshButton.textContent = 'Loading...';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        refreshButton.disabled = false;
+        refreshButton.textContent = 'Refresh Drafts';
+        renderPhase10ReviewQueue(result);
+      })
+      .withFailureHandler(function(error) {
+        refreshButton.disabled = false;
+        refreshButton.textContent = 'Refresh Drafts';
+
+        summaryBox.textContent =
+          'Unable to load the review queue.';
+
+        showPhase10Message(
+          error && error.message
+            ? error.message
+            : 'An unknown loading error occurred.',
+          true
+        );
+      })
+      .getPhase10ReviewQueue();
+  }
+
+
+  function renderPhase10ReviewQueue(result) {
+    const summary =
+      result && result.summary
+        ? result.summary
+        : {};
+
+    const drafts =
+      result && Array.isArray(result.drafts)
+        ? result.drafts
+        : [];
+
+    const summaryBox =
+      document.getElementById('phase10Summary');
+
+    const draftList =
+      document.getElementById('phase10DraftList');
+
+    summaryBox.textContent =
+      'Total: ' + (summary.total || 0) +
+      ' | Awaiting Approval: ' +
+      (summary.awaitingApproval || 0) +
+      ' | Approved: ' +
+      (summary.approved || 0) +
+      ' | Rejected: ' +
+      (summary.rejected || 0) +
+      ' | On Hold: ' +
+      (summary.held || 0);
+
+    draftList.innerHTML = '';
+
+    if (drafts.length === 0) {
+      const emptyMessage =
+        document.createElement('p');
+
+      emptyMessage.textContent =
+        'No Phase 10 drafts are currently available.';
+
+      emptyMessage.style.padding = '16px';
+      emptyMessage.style.background = '#fff7df';
+      emptyMessage.style.borderRadius = '8px';
+
+      draftList.appendChild(emptyMessage);
+      return;
+    }
+
+    drafts.forEach(function(draft, index) {
+      draftList.appendChild(
+        createPhase10DraftCard(draft, index)
+      );
+    });
+  }
+
+
+  function createPhase10DraftCard(draft, index) {
+    const card = document.createElement('article');
+
+    card.style.marginBottom = '20px';
+    card.style.padding = '18px';
+    card.style.border = '1px solid #c7d3e3';
+    card.style.borderRadius = '12px';
+    card.style.background = '#fafcff';
+
+    const heading = document.createElement('h3');
+
+    heading.textContent =
+      'Draft ' + (index + 1) +
+      ': ' + (draft.accountName || 'Unknown Account');
+
+    heading.style.margin = '0 0 10px';
+    heading.style.color = '#17365d';
+
+    card.appendChild(heading);
+
+    card.appendChild(
+      createPhase10InfoLine(
+        'Draft ID',
+        draft.draftId
+      )
+    );
+
+    card.appendChild(
+      createPhase10InfoLine(
+        'Bureau',
+        draft.bureau
+      )
+    );
+
+    card.appendChild(
+      createPhase10InfoLine(
+        'Issue',
+        draft.issueType
+      )
+    );
+
+    card.appendChild(
+      createPhase10InfoLine(
+        'Current Status',
+        draft.approvalStatus ||
+          'AWAITING ERNIE APPROVAL'
+      )
+    );
+
+    const evidenceTitle =
+      document.createElement('strong');
+
+    evidenceTitle.textContent =
+      'Supporting Evidence';
+
+    evidenceTitle.style.display = 'block';
+    evidenceTitle.style.marginTop = '14px';
+
+    card.appendChild(evidenceTitle);
+
+    const evidenceText =
+      document.createElement('p');
+
+    evidenceText.textContent =
+      draft.evidenceExplanation ||
+      'No explanation available.';
+
+    evidenceText.style.whiteSpace = 'pre-wrap';
+    evidenceText.style.lineHeight = '1.5';
+
+    card.appendChild(evidenceText);
+
+    const letterTitle =
+      document.createElement('strong');
+
+    letterTitle.textContent = 'Draft Letter';
+    letterTitle.style.display = 'block';
+    letterTitle.style.marginTop = '14px';
+
+    card.appendChild(letterTitle);
+
+    const letterBox =
+      document.createElement('pre');
+
+    letterBox.textContent =
+      draft.letterBody ||
+      'No letter text available.';
+
+    letterBox.style.whiteSpace = 'pre-wrap';
+    letterBox.style.wordBreak = 'break-word';
+    letterBox.style.padding = '14px';
+    letterBox.style.background = '#fff';
+    letterBox.style.border = '1px solid #d8e0ea';
+    letterBox.style.borderRadius = '8px';
+    letterBox.style.fontFamily = 'Arial, sans-serif';
+    letterBox.style.fontSize = '14px';
+    letterBox.style.lineHeight = '1.5';
+
+    card.appendChild(letterBox);
+
+    const noteLabel =
+      document.createElement('label');
+
+    noteLabel.textContent =
+      'Decision Note (optional)';
+
+    noteLabel.style.display = 'block';
+    noteLabel.style.marginTop = '14px';
+    noteLabel.style.fontWeight = '700';
+
+    card.appendChild(noteLabel);
+
+    const noteBox =
+      document.createElement('textarea');
+
+    noteBox.id =
+      'phase10-note-' + index;
+
+    noteBox.value =
+      draft.decisionNote || '';
+
+    noteBox.rows = 3;
+    noteBox.placeholder =
+      'Enter a reason or note if needed.';
+
+    noteBox.style.width = '100%';
+    noteBox.style.boxSizing = 'border-box';
+    noteBox.style.marginTop = '6px';
+    noteBox.style.padding = '10px';
+    noteBox.style.border = '1px solid #aebdce';
+    noteBox.style.borderRadius = '8px';
+
+    card.appendChild(noteBox);
+
+    const buttonRow =
+      document.createElement('div');
+
+    buttonRow.style.display = 'flex';
+    buttonRow.style.gap = '10px';
+    buttonRow.style.flexWrap = 'wrap';
+    buttonRow.style.marginTop = '14px';
+
+    buttonRow.appendChild(
+      createPhase10DecisionButton(
+        'Approve',
+        '#18794e',
+        draft.draftId,
+        'APPROVE',
+        index
+      )
+    );
+
+    buttonRow.appendChild(
+      createPhase10DecisionButton(
+        'Reject',
+        '#b42318',
+        draft.draftId,
+        'REJECT',
+        index
+      )
+    );
+
+    buttonRow.appendChild(
+      createPhase10DecisionButton(
+        'Hold',
+        '#9a6700',
+        draft.draftId,
+        'HOLD',
+        index
+      )
+    );
+
+    card.appendChild(buttonRow);
+    return card;
+  }
+
+
+  function createPhase10InfoLine(label, value) {
+    const line = document.createElement('p');
+
+    line.style.margin = '5px 0';
+
+    const labelElement =
+      document.createElement('strong');
+
+    labelElement.textContent = label + ': ';
+
+    const valueElement =
+      document.createElement('span');
+
+    valueElement.textContent =
+      value || 'Not available';
+
+    line.appendChild(labelElement);
+    line.appendChild(valueElement);
+
+    return line;
+  }
+
+
+  function createPhase10DecisionButton(
+    label,
+    color,
+    draftId,
+    decision,
+    index
+  ) {
+    const button =
+      document.createElement('button');
+
+    button.type = 'button';
+    button.textContent = label;
+    button.style.padding = '10px 18px';
+    button.style.border = '0';
+    button.style.borderRadius = '8px';
+    button.style.background = color;
+    button.style.color = '#fff';
+    button.style.fontWeight = '700';
+    button.style.cursor = 'pointer';
+
+    button.onclick = function() {
+      savePhase10DashboardDecision(
+        draftId,
+        decision,
+        index,
+        button
+      );
+    };
+
+    return button;
+  }
+
+
+  function savePhase10DashboardDecision(
+    draftId,
+    decision,
+    index,
+    button
+  ) {
+    const noteBox =
+      document.getElementById(
+        'phase10-note-' + index
+      );
+
+    const decisionNote =
+      noteBox ? noteBox.value.trim() : '';
+
+    button.disabled = true;
+    button.textContent = 'Saving...';
+
+    google.script.run
+      .withSuccessHandler(function() {
+        showPhase10Message(
+          decision +
+          ' saved successfully for ' +
+          draftId +
+          '.',
+          false
+        );
+
+        loadPhase10ReviewQueue();
+      })
+      .withFailureHandler(function(error) {
+        button.disabled = false;
+        button.textContent =
+          decision === 'APPROVE'
+            ? 'Approve'
+            : decision === 'REJECT'
+              ? 'Reject'
+              : 'Hold';
+
+        showPhase10Message(
+          error && error.message
+            ? error.message
+            : 'The decision could not be saved.',
+          true
+        );
+      })
+      .savePhase10ReviewDecision(
+        draftId,
+        decision,
+        decisionNote
+      );
+  }
+
+
+  function showPhase10Message(message, isError) {
+    const messageBox =
+      document.getElementById('phase10Message');
+
+    messageBox.textContent = message;
+    messageBox.style.display = 'block';
+    messageBox.style.background =
+      isError ? '#fde7e7' : '#e7f6ec';
+    messageBox.style.color =
+      isError ? '#8a1c1c' : '#145c36';
+  }
+
+
+  document.addEventListener(
+    'DOMContentLoaded',
+    function() {
+      loadPhase10ReviewQueue();
+    }
+  );
+</script>
+</body>
+</html>
+ + amount.toFixed(2);
     }
 
 
