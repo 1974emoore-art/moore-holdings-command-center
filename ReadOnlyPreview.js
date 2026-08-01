@@ -26,7 +26,7 @@ function runCommandCenterReadOnlyPreview() {
 
   const report = {
     completed: phase9.completed === true && phase10.completed === true,
-    productionVersionExpected: 44,
+    productionVersionExpected: 59,
     phase9: {
       heldAccountsRechecked: Number(phase9.heldAccountsRechecked || 0),
       reportAccountsParsed: Number(phase9.reportAccountsParsed || 0),
