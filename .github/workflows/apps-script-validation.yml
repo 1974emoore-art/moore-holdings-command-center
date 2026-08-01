@@ -379,3 +379,52 @@ jobs:
 
           console.log('Business Credit core verified.');
           NODE
+
+
+      - name: Verify seven-module production health gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const source = fs.readFileSync('CommandCenterHealth.js', 'utf8');
+
+          const requiredControls = [
+            'personalScanVerified',
+            "typeof personal.recordCount === 'number'",
+            "typeof personal.summary === 'object'",
+            'const moduleSafety = personalScanVerified && [',
+            'personalCreditScanVerified: personalScanVerified',
+            'allModuleSafetyVerified: moduleSafety',
+            'productionVersionExpected: 58'
+          ];
+
+          for (const control of requiredControls) {
+            if (!source.includes(control)) {
+              throw new Error(
+                'Seven-module health control is missing: ' + control
+              );
+            }
+          }
+
+          const safetyInputs = [
+            'business.safety',
+            'finance.safety',
+            'turo.safety',
+            'realEstate.safety',
+            'trading.safety',
+            'growth.safety'
+          ];
+
+          for (const input of safetyInputs) {
+            if (!source.includes(input)) {
+              throw new Error(
+                'Module safety input is missing: ' + input
+              );
+            }
+          }
+
+          console.log(
+            'All seven Command Center modules are included in health verification.'
+          );
+          NODE
