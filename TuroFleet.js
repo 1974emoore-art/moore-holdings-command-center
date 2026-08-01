@@ -154,9 +154,9 @@ function testTuroFleetCore() {
     [
       {
         fields: {
-          Vehicle: '2025 Toyota Corolla',
+          Vehicle: '2026 Toyota Corolla',
           Status: 'Research',
-          Year: 2025,
+          Year: 2026,
           Make: 'Toyota',
           Model: 'Corolla',
           'Finance Gate': 'Review Required',
