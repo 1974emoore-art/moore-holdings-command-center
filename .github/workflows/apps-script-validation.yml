@@ -281,7 +281,7 @@ jobs:
           const required = [
             "github.event.issue.user.login == github.repository_owner",
             "github.event.issue.title == '[Approved Read-Only API Deploy and Preview] Phase 9 and Phase 10'",
-            "Create separate API-executable deployment",
+            "Verify separate API-executable deployment exists",
             "Verify production web deployment remains Version 44",
             '"airtableWritesRequested":0',
             '"airtableRecordsChanged":0',
