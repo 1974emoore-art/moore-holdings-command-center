@@ -37,7 +37,7 @@ function runCommandCenterProductionHealth() {
 
   const report = {
     completed: moduleSafety,
-    productionVersionExpected: 58,
+    productionVersionExpected: 59,
     modules: {
       personalCredit: {
         records: Number(personal.recordCount || 0),

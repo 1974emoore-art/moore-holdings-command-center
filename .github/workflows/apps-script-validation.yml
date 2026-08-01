@@ -396,7 +396,7 @@ jobs:
             'const moduleSafety = personalScanVerified && [',
             'personalCreditScanVerified: personalScanVerified',
             'allModuleSafetyVerified: moduleSafety',
-            'productionVersionExpected: 58'
+            'productionVersionExpected: 59'
           ];
 
           for (const control of requiredControls) {
@@ -479,5 +479,50 @@ jobs:
 
           console.log(
             'Production integrity follows the source-expected version; module health remains owner-session-only.'
+          );
+          NODE
+
+
+      - name: Verify production-version contract across bridges
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const files = [
+            'CommandCenterHealth.js',
+            'ReadOnlyPreview.js'
+          ];
+
+          const versions = files.map(function(file) {
+            const source = fs.readFileSync(file, 'utf8');
+            const match = source.match(
+              /productionVersionExpected:\s*([0-9]+)/
+            );
+            if (!match) {
+              throw new Error(
+                'Production version expectation missing from ' + file
+              );
+            }
+            return Number(match[1]);
+          });
+
+          if (versions[0] !== versions[1]) {
+            throw new Error(
+              'Production version mismatch: ' +
+              files[0] + '=' + versions[0] + ', ' +
+              files[1] + '=' + versions[1]
+            );
+          }
+
+          if (versions[0] !== 59) {
+            throw new Error(
+              'Version 59 release contract expected; found ' +
+              versions[0]
+            );
+          }
+
+          console.log(
+            'Health and read-only preview both target Version 59.'
           );
           NODE
