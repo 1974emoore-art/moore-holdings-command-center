@@ -6,7 +6,7 @@ Moore Holdings AI Command Center Operating System
 
 - [Operational handoff and verified checkpoints](docs/OPERATIONAL_HANDOFF.md)
 - [Production recovery runbook](docs/PRODUCTION_RECOVERY.md)
-- Verified production baseline: Apps Script Version 58
+- Verified production baseline: Apps Script Version 59
 - Full seven-module operational health is confirmed only inside the authenticated owner dashboard when it reports **HEALTHY** across **7 / 7** modules.
 - Production deployments are manual, immutable, and independently verified.
 - Production rollback is manual, confirmation-gated, and preserves the existing deployment ID.
