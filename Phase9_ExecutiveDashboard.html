@@ -414,6 +414,13 @@
       </button>
 
       <button
+        id="businessCreditButton"
+        class="btn-gold"
+        onclick="loadBusinessCredit()">
+        Business Credit Summary
+      </button>
+
+      <button
         class="btn-neutral"
         onclick="showPendingOnly()">
         Show Pending Reviews
@@ -474,6 +481,25 @@
         <div id="rejectedReviews" class="card-value">—</div>
         <div class="card-note">Rejected decisions</div>
       </div>
+    </section>
+
+    <section id="businessCreditModule" class="panel" style="margin-bottom:20px;">
+      <div class="panel-header">
+        <div>
+          <h2>Business Credit</h2>
+          <div class="card-note">Live Airtable readiness summary • read-only</div>
+        </div>
+        <button class="btn-primary" onclick="loadBusinessCredit()">Refresh Business Credit</button>
+      </div>
+      <div class="cards" style="padding:18px;margin-bottom:0;">
+        <div class="card"><div class="card-label">Readiness Score</div><div id="businessReadiness" class="card-value">—</div><div class="card-note">Average across tracked items</div></div>
+        <div class="card"><div class="card-label">Complete</div><div id="businessComplete" class="card-value">—</div><div class="card-note">Established or active</div></div>
+        <div class="card"><div class="card-label">Action Required</div><div id="businessActionRequired" class="card-value">—</div><div class="card-note">Owner decision needed</div></div>
+        <div class="card"><div class="card-label">Monitoring</div><div id="businessMonitoring" class="card-value">—</div><div class="card-note">Waiting or reporting watch</div></div>
+        <div class="card"><div class="card-label">Blocked</div><div id="businessBlocked" class="card-value">—</div><div class="card-note">Do not apply</div></div>
+        <div class="card"><div class="card-label">Financing Gates Clear</div><div id="businessClearGates" class="card-value">—</div><div class="card-note">Eligible for later review</div></div>
+      </div>
+      <div id="businessSafety" class="footer-note" style="padding:0 18px 18px;">Run the summary to verify production safety controls.</div>
     </section>
 
     <section class="panel">
@@ -865,6 +891,47 @@
           handleFailure(error);
         })
         .scanPersonalCredit();
+    }
+
+
+    function loadBusinessCredit() {
+      const button = document.getElementById('businessCreditButton');
+      if (button) button.disabled = true;
+      showMessage('Loading the live read-only Business Credit summary...', 'info');
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (button) button.disabled = false;
+          const readiness = result && result.readiness ? result.readiness : {};
+          const summary = result && result.summary ? result.summary : {};
+          const safety = result && result.safety ? result.safety : {};
+
+          setText('businessReadiness', (readiness.averageScore || 0) + '%');
+          setText('businessComplete', summary.complete || 0);
+          setText('businessActionRequired', summary.actionRequired || 0);
+          setText('businessMonitoring', summary.monitoring || 0);
+          setText('businessBlocked', summary.blocked || 0);
+          setText('businessClearGates', readiness.clearFinancingGateCount || 0);
+
+          const safe = safety.readOnly === true &&
+            safety.airtableWritesRequested === 0 &&
+            safety.airtableRecordsChanged === 0 &&
+            safety.vendorApplicationsSubmitted === 0 &&
+            safety.financingApplicationsSubmitted === 0 &&
+            safety.purchasesAuthorized === 0 &&
+            safety.paymentsAuthorized === 0;
+
+          document.getElementById('businessSafety').textContent = safe
+            ? 'Safety verified: read-only; zero writes, applications, purchases, and payments.'
+            : 'Safety verification requires review.';
+
+          showMessage('Business Credit summary refreshed successfully.', 'success');
+        })
+        .withFailureHandler(function(error) {
+          if (button) button.disabled = false;
+          handleFailure(error);
+        })
+        .scanBusinessCredit();
     }
 
 
