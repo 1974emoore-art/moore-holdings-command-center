@@ -81,7 +81,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          RESULT="$(clasp -A "$CLASP_AUTH_FILE" run runCommandCenterReadOnlyPreview --nondev)"
+          RESULT="$(clasp -A "$CLASP_AUTH_FILE" run runCommandCenterReadOnlyPreview --dev)"
           printf '%s\n' "$RESULT"
           printf '%s\n' "$RESULT" | grep -F '"airtableWritesRequested":0'
           printf '%s\n' "$RESULT" | grep -F '"airtableRecordsChanged":0'
