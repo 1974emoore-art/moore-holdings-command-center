@@ -429,6 +429,7 @@
       <a class="module-link" href="#businessCreditModule">Business Credit</a>
       <a class="module-link" href="#financeModule">Finance &amp; Cash Flow</a>
       <a class="module-link" href="#turoModule">Turo Fleet</a>
+      <a class="module-link" href="#realEstateModule">Real Estate</a>
     </nav>
 
     <div class="toolbar">
@@ -464,6 +465,13 @@
         class="btn-gold"
         onclick="loadTuroFleet()">
         Turo Fleet
+      </button>
+
+      <button
+        id="realEstateButton"
+        class="btn-gold"
+        onclick="loadRealEstateMarkets()">
+        Real Estate
       </button>
 
       <button
@@ -587,6 +595,27 @@
       </div>
       <div id="turoTargets" class="footer-note" style="padding:0 18px 8px;">Run the fleet summary to load governed targets.</div>
       <div id="turoSafety" class="footer-note" style="padding:0 18px 18px;">Run the fleet summary to verify production safety controls.</div>
+    </section>
+
+    <section id="realEstateModule" class="panel" style="margin-bottom:20px;">
+      <div class="panel-header">
+        <div>
+          <h2>Real Estate</h2>
+          <div class="card-note">Vacation-market intelligence and property readiness • Finance-gated</div>
+        </div>
+        <button class="btn-primary" onclick="loadRealEstateMarkets()">Refresh Real Estate</button>
+      </div>
+      <div class="cards" style="padding:18px;margin-bottom:0;">
+        <div class="card"><div class="card-label">Tracked Markets</div><div id="realEstateTracked" class="card-value">—</div><div class="card-note">Vacation markets monitored</div></div>
+        <div class="card"><div class="card-label">Core Markets</div><div id="realEstateCore" class="card-value">—</div><div class="card-note">Highest-priority research</div></div>
+        <div class="card"><div class="card-label">Strong Watch</div><div id="realEstateWatch" class="card-value">—</div><div class="card-note">Promising markets retained</div></div>
+        <div class="card"><div class="card-label">High Risk</div><div id="realEstateHighRisk" class="card-value">—</div><div class="card-note">Markets requiring caution</div></div>
+        <div class="card"><div class="card-label">Underwriting Complete</div><div id="realEstateUnderwritten" class="card-value">—</div><div class="card-note">Required evidence assembled</div></div>
+        <div class="card"><div class="card-label">Financially Ready</div><div id="realEstateReady" class="card-value">—</div><div class="card-note">All acquisition gates satisfied</div></div>
+        <div class="card"><div class="card-label">Acquisition Gate</div><div id="realEstateGate" class="card-value" style="font-size:20px;">—</div><div class="card-note">Controlled by Finance readiness</div></div>
+      </div>
+      <div id="realEstateMarkets" class="footer-note" style="padding:0 18px 8px;">Run the market summary to load governed markets.</div>
+      <div id="realEstateSafety" class="footer-note" style="padding:0 18px 18px;">Run the market summary to verify production safety controls.</div>
     </section>
 
     <section class="panel">
@@ -1130,6 +1159,62 @@
           handleFailure(error);
         })
         .scanTuroFleet();
+    }
+
+
+    function loadRealEstateMarkets() {
+      const button = document.getElementById('realEstateButton');
+      if (button) button.disabled = true;
+      showMessage('Loading governed Real Estate market intelligence...', 'info');
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (button) button.disabled = false;
+          const summary = result && result.summary ? result.summary : {};
+          const readiness = result && result.readiness ? result.readiness : {};
+          const safety = result && result.safety ? result.safety : {};
+          const markets = result && Array.isArray(result.markets)
+            ? result.markets
+            : [];
+
+          setText('realEstateTracked', summary.trackedMarkets || 0);
+          setText('realEstateCore', summary.coreMarkets || 0);
+          setText('realEstateWatch', summary.strongWatch || 0);
+          setText('realEstateHighRisk', summary.highRisk || 0);
+          setText('realEstateUnderwritten', summary.underwritingComplete || 0);
+          setText('realEstateReady', summary.financiallyReady || 0);
+          setText('realEstateGate', readiness.acquisitionGate || 'Review Required');
+
+          document.getElementById('realEstateMarkets').textContent = markets.length
+            ? markets.map(function(market) {
+                const readinessText = market.financiallyReady
+                  ? 'FINANCIALLY READY'
+                  : 'NOT READY — ' + market.blockers.join('; ');
+                return market.market + ' — ' + readinessText;
+              }).join(' | ')
+            : 'No Real Estate markets are currently tracked.';
+
+          const safe = safety.readOnly === true &&
+            safety.airtableWritesRequested === 0 &&
+            safety.airtableRecordsChanged === 0 &&
+            safety.propertyOffersAuthorized === 0 &&
+            safety.financingApplicationsSubmitted === 0 &&
+            safety.depositsAuthorized === 0 &&
+            safety.purchasesAuthorized === 0 &&
+            safety.paymentsAuthorized === 0 &&
+            readiness.propertyAcquisitionAuthorized === false;
+
+          document.getElementById('realEstateSafety').textContent = safe
+            ? 'Safety verified: read-only; zero property offers, financing applications, deposits, purchases, and payments.'
+            : 'Real Estate safety verification requires review.';
+
+          showMessage('Real Estate summary refreshed successfully.', 'success');
+        })
+        .withFailureHandler(function(error) {
+          if (button) button.disabled = false;
+          handleFailure(error);
+        })
+        .scanRealEstateMarkets();
     }
 
 
