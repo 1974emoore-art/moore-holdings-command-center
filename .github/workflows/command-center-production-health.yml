@@ -58,12 +58,23 @@ jobs:
           chmod 600 "$AUTH_FILE"
           echo "CLASP_AUTH_FILE=$AUTH_FILE" >> "$GITHUB_ENV"
 
+      - name: Update existing owner-only API deployment to Version 56
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPLOYMENTS="$(clasp -A "$CLASP_AUTH_FILE" deployments)"
+          API_LINE="$(printf '%s\n' "$DEPLOYMENTS" | grep -F 'Command Center aggregate-only read-only API' | head -1)"
+          DEPLOYMENT_ID="$(printf '%s\n' "$API_LINE" | grep -Eo 'AKfycb[A-Za-z0-9_-]+' | head -1)"
+          test -n "$DEPLOYMENT_ID"
+          clasp -A "$CLASP_AUTH_FILE" deploy -i "$DEPLOYMENT_ID" -V 56 -d 'Command Center aggregate-only read-only API'
+          clasp -A "$CLASP_AUTH_FILE" deployments | grep -F "$DEPLOYMENT_ID @56"
+
       - name: Run aggregate-only production health check
         id: health
         shell: bash
         run: |
           set -euo pipefail
-          RESULT="$(clasp -A "$CLASP_AUTH_FILE" run runCommandCenterProductionHealth)"
+          RESULT="$(clasp -A "$CLASP_AUTH_FILE" run runCommandCenterProductionHealth --nondev)"
           printf '%s\n' "$RESULT"
           printf '%s\n' "$RESULT" | grep -F '"completed":true'
           printf '%s\n' "$RESULT" | grep -F '"allModuleSafetyVerified":true'
