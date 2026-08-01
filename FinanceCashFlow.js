@@ -32,6 +32,23 @@ function analyzeFinanceCashFlow_(records) {
     incompleteRecords: 0
   };
 
+  const transactions = (records || []).map(function(record) {
+    const fields = record && record.fields ? record.fields : {};
+
+    return {
+      transaction: fields['Transaction'] || 'Unnamed transaction',
+      date: fields['Date'] || '',
+      type: fields['Type'] || '',
+      category: fields['Category'] || '',
+      amount: Number(fields['Amount']) || 0,
+      status: fields['Status'] || '',
+      division: fields['Division'] || '',
+      approvalRequired: fields['Approval Required'] === true,
+      governanceGate: fields['Governance Gate'] || '',
+      notes: fields['Notes'] || ''
+    };
+  });
+
   (records || []).forEach(function(record) {
     const fields = record.fields || {};
     const type = financeText_(fields['Type']);
@@ -101,6 +118,7 @@ function analyzeFinanceCashFlow_(records) {
   return {
     generatedAt: new Date().toISOString(),
     summary: summary,
+    transactions: transactions,
     readiness: {
       hasData: hasData,
       dataComplete: dataComplete,
