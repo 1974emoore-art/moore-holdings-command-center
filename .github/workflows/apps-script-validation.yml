@@ -312,3 +312,70 @@ jobs:
 
           console.log('Separate API deployment safety verified.');
           NODE
+
+
+      - name: Verify Business Credit core safety and controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const vm = require('vm');
+          const source = fs.readFileSync('BusinessCreditModule.js', 'utf8');
+
+          const requiredControls = [
+            'scanBusinessCredit()',
+            'analyzeBusinessCredit_',
+            'Operational Classification',
+            'Approval Required',
+            'Reporting Verified',
+            'Financing Gate',
+            'Business Readiness Score',
+            'airtableWritesRequested: 0',
+            'airtableRecordsChanged: 0',
+            'vendorApplicationsSubmitted: 0',
+            'financingApplicationsSubmitted: 0',
+            'paymentsAuthorized: 0'
+          ];
+
+          for (const control of requiredControls) {
+            if (!source.includes(control)) {
+              throw new Error(
+                'Business Credit core control is missing: ' + control
+              );
+            }
+          }
+
+          const forbiddenPatterns = [
+            /method\s*:\s*['"]post['"]/i,
+            /method\s*:\s*['"]patch['"]/i,
+            /method\s*:\s*['"]put['"]/i,
+            /method\s*:\s*['"]delete['"]/i,
+            /UrlFetchApp\.fetch\s*\(/,
+            /createFile\s*\(/,
+            /DocumentApp\.create\s*\(/
+          ];
+
+          for (const pattern of forbiddenPatterns) {
+            if (pattern.test(source)) {
+              throw new Error(
+                'Business Credit core contains forbidden action: ' + pattern
+              );
+            }
+          }
+
+          const sandbox = { console };
+          vm.createContext(sandbox);
+          vm.runInContext(source, sandbox);
+          const result = sandbox.testBusinessCreditCore();
+
+          if (
+            result.summary.complete !== 2 ||
+            result.summary.actionRequired !== 1 ||
+            result.summary.blocked !== 1
+          ) {
+            throw new Error('Business Credit sample classification failed.');
+          }
+
+          console.log('Business Credit core verified.');
+          NODE
