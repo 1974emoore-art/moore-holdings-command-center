@@ -894,10 +894,26 @@ function savePhase10ReviewDecision(
   }
 
   if (existingDecision === normalizedDecision) {
+    if (
+      normalizedDecision === 'APPROVE' &&
+      draft.airtableUpdated !== true
+    ) {
+      const syncResult =
+        executePhase10AirtableApprovalSync_(draft);
+
+      draft.airtableUpdated = true;
+      draft.airtableSync = syncResult;
+      properties.setProperty(
+        storageKey,
+        JSON.stringify(draft)
+      );
+    }
+
     return {
       completed: true,
       noChange: true,
-      draft: draft
+      draft: draft,
+      airtableUpdated: draft.airtableUpdated === true
     };
   }
 
@@ -934,6 +950,19 @@ function savePhase10ReviewDecision(
     JSON.stringify(draft)
   );
 
+  if (normalizedDecision === 'APPROVE') {
+    const syncResult =
+      executePhase10AirtableApprovalSync_(draft);
+
+    draft.airtableUpdated = true;
+    draft.airtableSync = syncResult;
+
+    properties.setProperty(
+      storageKey,
+      JSON.stringify(draft)
+    );
+  }
+
   console.log(
     'PHASE 10 DECISION SAVED: ' +
     JSON.stringify({
@@ -950,6 +979,82 @@ function savePhase10ReviewDecision(
   return {
     completed: true,
     draft: draft
+  };
+}
+
+
+function executePhase10AirtableApprovalSync_(draft) {
+  const properties =
+    PropertiesService.getScriptProperties();
+
+  const tableId = String(
+    properties.getProperty(
+      'AIRTABLE_PERSONAL_CREDIT_TABLE_ID'
+    ) ||
+    properties.getProperty(
+      'AIRTABLE_PERSONAL_CREDIT_TABLE'
+    ) ||
+    ''
+  ).trim();
+
+  if (!tableId) {
+    throw new Error(
+      'Personal Credit Airtable table configuration is missing.'
+    );
+  }
+
+  const request = {
+    module: 'PERSONAL_CREDIT',
+    lifecycleStage: 'APPROVAL_AND_PRODUCTION',
+    actionType: 'AIRTABLE_RECORD_UPDATE',
+    target: {
+      system: 'AIRTABLE',
+      tableId: tableId,
+      recordId: draft.recordId
+    },
+    payload: {
+      tableId: tableId,
+      recordId: draft.recordId,
+      fields: {
+        'Action Stage': 'Approved',
+        'Batch ID': draft.batchId || 'PHASE10-REVIEW',
+        'Action Needed':
+          'Generate approved Phase 10 PDF, print, mail certified, and log tracking.'
+      },
+      expectedFields: {}
+    },
+    reason:
+      'Synchronize Ernest-approved Phase 10 letter decision to Airtable.',
+    requestedBy: 'PHASE10_REVIEW_GATE',
+    idempotencyKey:
+      'PHASE10-AIRTABLE-APPROVAL-' + draft.draftId
+  };
+
+  const queued = queueGovernedAction(request);
+  approveGovernedAction(
+    queued.actionId,
+    'ERNEST_APPROVES_GOVERNED_ACTION',
+    'Phase 10 letter approval includes its Airtable status update.'
+  );
+
+  const executed = executeApprovedGovernedAction(
+    queued.actionId,
+    'ERNEST_APPROVES_GOVERNED_ACTION'
+  );
+
+  if (
+    !executed ||
+    executed.status !== 'VERIFIED'
+  ) {
+    throw new Error(
+      'Phase 10 Airtable approval synchronization was not verified.'
+    );
+  }
+
+  return {
+    actionId: queued.actionId,
+    status: executed.status,
+    verifiedAt: new Date().toISOString()
   };
 }
 
