@@ -14,7 +14,15 @@ function runCommandCenterProductionHealth() {
   const trading = scanTradingResearch() || {};
   const growth = scanGrowthExpansion() || {};
 
-  const moduleSafety = [
+  const personalScanVerified = Boolean(
+    personal &&
+    typeof personal === 'object' &&
+    typeof personal.recordCount === 'number' &&
+    personal.summary &&
+    typeof personal.summary === 'object'
+  );
+
+  const moduleSafety = personalScanVerified && [
     business.safety,
     finance.safety,
     turo.safety,
@@ -29,7 +37,7 @@ function runCommandCenterProductionHealth() {
 
   const report = {
     completed: moduleSafety,
-    productionVersionExpected: 57,
+    productionVersionExpected: 58,
     modules: {
       personalCredit: {
         records: Number(personal.recordCount || 0),
@@ -105,6 +113,7 @@ function runCommandCenterProductionHealth() {
     safety: {
       readOnly: true,
       allModuleSafetyVerified: moduleSafety,
+      personalCreditScanVerified: personalScanVerified,
       airtableWritesRequested: 0,
       airtableRecordsChanged: 0,
       filesCreated: 0,
