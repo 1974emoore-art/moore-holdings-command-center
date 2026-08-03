@@ -650,6 +650,14 @@ function getGovernedActionAudit_() {
 function recordGovernedActionFailure_(actionId, error) {
   try {
     const action = requireGovernedAction_(actionId);
+
+    if (action.status === GOVERNED_ACTION_ENGINE.statuses.EXPIRED) {
+      appendGovernedActionAudit_('EXPIRED_EXECUTION_REJECTED', action, {
+        message: error && error.message ? error.message : String(error)
+      });
+      return;
+    }
+
     action.status = GOVERNED_ACTION_ENGINE.statuses.FAILED;
     action.failure = {
       failedAt: new Date().toISOString(),
