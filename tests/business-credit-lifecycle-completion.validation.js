@@ -1,0 +1,14 @@
+'use strict';
+const fs=require('fs');const vm=require('vm');
+const source=fs.readFileSync('BusinessCreditLifecycleCompletion.js','utf8');
+['activeCardCount','utilizationPercent','renewalDueCount','activePlanCount','retainedKnowledgeRequired: true','lifecycleLawSatisfied','applicationSubmissionAllowed: false','directExternalExecutionAllowed: false','executiveReviewRequired: true'].forEach(function(expected){if(!source.includes(expected))throw new Error('Missing Business Credit lifecycle completion control: '+expected);});
+if(/UrlFetchApp\.|GmailApp\.|MailApp\.|DriveApp\.|CalendarApp\.|approveGovernedAction\s*\(|executeApprovedGovernedAction\s*\(/.test(source))throw new Error('Lifecycle completion model must not execute external actions.');
+let now=Date.parse('2026-08-03T20:00:00Z');
+const sandbox={Date:class extends Date{constructor(v){super(v===undefined?now:v)}static now(){return now;}static parse(v){return Date.parse(v);}}};vm.createContext(sandbox);vm.runInContext(source,sandbox);
+const incomplete=sandbox.buildBusinessCreditLifecycleCompletion({cards:[],growthPlans:[],exitPlans:[]});
+if(incomplete.lifecycleLawSatisfied||incomplete.blockers.length!==3)throw new Error('Missing-lifecycle blockers failed.');
+const complete=sandbox.buildBusinessCreditLifecycleCompletion({cards:[{status:'ACTIVE',limit:10000,balance:1500,renewalAt:'2027-01-01'}],growthPlans:[{status:'APPROVED',targetAmount:25000,targetDate:'2027-06-01'}],exitPlans:[{status:'APPROVED',strategy:'retain and transfer',owner:'CEO',recordRetentionPlan:'Archive final records'}]});
+if(!complete.lifecycleLawSatisfied||complete.cardLifecycle.utilizationPercent!==15||complete.nextRecommendedAction!=='MONITOR_AND_OPTIMIZE_BUSINESS_CREDIT_LIFECYCLE')throw new Error('Complete lifecycle evaluation failed.');
+const highUtil=sandbox.buildBusinessCreditLifecycleCompletion({cards:[{status:'ACTIVE',limit:1000,balance:500}],growthPlans:[{status:'PLANNED',targetAmount:1000,targetDate:'2027-01-01'}],exitPlans:[{status:'DRAFT',strategy:'close',owner:'CEO',recordRetentionPlan:'retain'}]});
+if(highUtil.blockers.indexOf('REDUCE_BUSINESS_CARD_UTILIZATION')===-1)throw new Error('Utilization blocker failed.');
+console.log('Business Credit lifecycle completion validation passed.');
