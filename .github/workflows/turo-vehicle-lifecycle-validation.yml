@@ -1,0 +1,27 @@
+name: Turo Vehicle Lifecycle Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'TuroVehicleLifecycle.js'
+      - 'tests/turo-vehicle-lifecycle.validation.js'
+      - '.github/workflows/turo-vehicle-lifecycle-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'TuroVehicleLifecycle.js'
+      - 'tests/turo-vehicle-lifecycle.validation.js'
+      - '.github/workflows/turo-vehicle-lifecycle-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-turo-vehicle-lifecycle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check TuroVehicleLifecycle.js
+      - run: node tests/turo-vehicle-lifecycle.validation.js
