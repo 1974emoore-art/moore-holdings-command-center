@@ -7,8 +7,10 @@ on:
       - 'Phase9_ExecutiveDashboard.html'
       - 'ZZ_DashboardRoutingPatch.js'
       - 'ZZZ_DashboardNotificationsPatch.js'
+      - 'ZZZZ_DashboardHealthDrilldownPatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
+      - 'tests/dashboard-health-drilldown.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   push:
     branches: [main]
@@ -16,8 +18,10 @@ on:
       - 'Phase9_ExecutiveDashboard.html'
       - 'ZZ_DashboardRoutingPatch.js'
       - 'ZZZ_DashboardNotificationsPatch.js'
+      - 'ZZZZ_DashboardHealthDrilldownPatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
+      - 'tests/dashboard-health-drilldown.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   workflow_dispatch:
 
@@ -35,9 +39,13 @@ jobs:
         run: |
           node --check ZZ_DashboardRoutingPatch.js
           node --check ZZZ_DashboardNotificationsPatch.js
+          node --check ZZZZ_DashboardHealthDrilldownPatch.js
 
       - name: Validate review-filter routing
         run: node tests/dashboard-review-routing.validation.js
 
       - name: Validate notifications
         run: node tests/dashboard-notifications.validation.js
+
+      - name: Validate System Health drill-down
+        run: node tests/dashboard-health-drilldown.validation.js
