@@ -34,6 +34,7 @@ function requirePattern(pattern, description) {
   ['recoveryRequired: true', 'failure recovery marker'],
   ["appendGovernedActionAudit_('ACTION_FAILED'", 'failure audit entry'],
   ["appendGovernedActionAudit_('ACTION_VERIFIED'", 'verification audit entry'],
+  ["appendGovernedActionAudit_('EXPIRED_EXECUTION_REJECTED'", 'expired-state audit entry'],
   ["masked[key] = '[REDACTED]'", 'sensitive-data redaction'],
   ['executionAdaptersLockedByDefault: true', 'dashboard safety disclosure']
 ].forEach(([text, description]) => requireText(text, description));
@@ -58,6 +59,10 @@ requirePattern(
   /function getGovernedActionExecutorRegistry_\(\)\s*\{[\s\S]*?AIRTABLE_RECORD_UPDATE:[\s\S]*?\}/,
   'only explicitly registered adapters can execute'
 );
+requirePattern(
+  /function recordGovernedActionFailure_\([\s\S]*?status === GOVERNED_ACTION_ENGINE\.statuses\.EXPIRED[\s\S]*?return;[\s\S]*?status = GOVERNED_ACTION_ENGINE\.statuses\.FAILED/,
+  'expired terminal state is preserved before generic failure handling'
+);
 
 // Execute the pure redaction helper in isolation. No Apps Script service is exposed.
 const redactionStart = source.indexOf('function maskGovernedActionPayload_(value)');
@@ -67,10 +72,13 @@ if (redactionStart < 0 || redactionEnd < 0) {
 }
 
 const redactionFunction = source.slice(redactionStart, redactionEnd);
-const sandbox = {};
-vm.createContext(sandbox);
-vm.runInContext(`${redactionFunction}; this.mask = maskGovernedActionPayload_;`, sandbox);
-const masked = sandbox.mask({
+const redactionSandbox = {};
+vm.createContext(redactionSandbox);
+vm.runInContext(
+  `${redactionFunction}; this.mask = maskGovernedActionPayload_;`,
+  redactionSandbox
+);
+const masked = redactionSandbox.mask({
   token: 'secret-token',
   nested: {
     accountNumber: '123456789',
@@ -86,6 +94,47 @@ if (
   masked.nested.safeField !== 'visible'
 ) {
   throw new Error('Sensitive payload redaction regression detected.');
+}
+
+// Execute failure handling in isolation and prove expiration is not rewritten.
+const failureStart = source.indexOf('function recordGovernedActionFailure_(actionId, error)');
+const failureEnd = source.indexOf('\n\n\nfunction buildGovernedActionId_', failureStart);
+if (failureStart < 0 || failureEnd < 0) {
+  throw new Error('Unable to isolate governed-action failure handler.');
+}
+
+const expiredAction = { actionId: 'expired-action', status: 'EXPIRED' };
+const auditEvents = [];
+let saveCalls = 0;
+const failureSandbox = {
+  GOVERNED_ACTION_ENGINE: {
+    statuses: { EXPIRED: 'EXPIRED', FAILED: 'FAILED' }
+  },
+  requireGovernedAction_: () => expiredAction,
+  appendGovernedActionAudit_: (eventType, action, details) => {
+    auditEvents.push({ eventType, action, details });
+  },
+  saveGovernedAction_: () => { saveCalls += 1; },
+  console
+};
+vm.createContext(failureSandbox);
+vm.runInContext(
+  `${source.slice(failureStart, failureEnd)}; this.recordFailure = recordGovernedActionFailure_;`,
+  failureSandbox
+);
+failureSandbox.recordFailure(
+  'expired-action',
+  new Error('Executive approval expired; preview and approve again.')
+);
+
+if (
+  expiredAction.status !== 'EXPIRED' ||
+  expiredAction.failure !== undefined ||
+  saveCalls !== 0 ||
+  auditEvents.length !== 1 ||
+  auditEvents[0].eventType !== 'EXPIRED_EXECUTION_REJECTED'
+) {
+  throw new Error('Expired governed action was overwritten by failure handling.');
 }
 
 console.log('Governed Action Engine regression validation passed.');
