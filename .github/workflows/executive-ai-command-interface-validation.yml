@@ -1,0 +1,30 @@
+name: Executive AI Command Interface Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ExecutiveAICommandInterface.js'
+      - 'tests/executive-ai-command-interface.validation.js'
+      - '.github/workflows/executive-ai-command-interface-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ExecutiveAICommandInterface.js'
+      - 'tests/executive-ai-command-interface.validation.js'
+      - '.github/workflows/executive-ai-command-interface-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-executive-ai-interface:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Validate interface syntax
+        run: node --check ExecutiveAICommandInterface.js
+      - name: Validate preview and approval boundaries
+        run: node tests/executive-ai-command-interface.validation.js
