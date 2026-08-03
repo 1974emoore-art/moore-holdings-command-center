@@ -15,7 +15,7 @@ on:
       - 'ZZZZZZZZZ_DashboardActivityRecoveryPatch.js'
       - 'ZZZZZZZZZZ_DashboardOperationsTimelinePatch.js'
       - 'ZZZZZZZZZZZ_DashboardExecutiveWorkQueuePatch.js'
-      - 'ZZZZZZZZZZZZ_DashboardProgressDeadlinePatch.js'
+      - '*DashboardProgressDeadlinePatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
@@ -42,7 +42,7 @@ on:
       - 'ZZZZZZZZZ_DashboardActivityRecoveryPatch.js'
       - 'ZZZZZZZZZZ_DashboardOperationsTimelinePatch.js'
       - 'ZZZZZZZZZZZ_DashboardExecutiveWorkQueuePatch.js'
-      - 'ZZZZZZZZZZZZ_DashboardProgressDeadlinePatch.js'
+      - '*DashboardProgressDeadlinePatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
@@ -79,7 +79,7 @@ jobs:
           node --check ZZZZZZZZZ_DashboardActivityRecoveryPatch.js
           node --check ZZZZZZZZZZ_DashboardOperationsTimelinePatch.js
           node --check ZZZZZZZZZZZ_DashboardExecutiveWorkQueuePatch.js
-          node --check ZZZZZZZZZZZZZ_DashboardProgressDeadlinePatch.js
+          node --check *DashboardProgressDeadlinePatch.js
 
       - name: Validate review-filter routing
         run: node tests/dashboard-review-routing.validation.js
