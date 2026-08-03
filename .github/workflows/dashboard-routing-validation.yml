@@ -11,12 +11,14 @@ on:
       - 'ZZZZZ_DashboardKpiNavigationPatch.js'
       - 'ZZZZZZ_DashboardHashRoutingPatch.js'
       - 'ZZZZZZZ_DashboardMobileNavigationPatch.js'
+      - 'ZZZZZZZZ_DashboardDailyBriefingPatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
       - 'tests/dashboard-kpi-navigation.validation.js'
       - 'tests/dashboard-hash-routing.validation.js'
       - 'tests/dashboard-mobile-navigation.validation.js'
+      - 'tests/dashboard-daily-briefing.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   push:
     branches: [main]
@@ -28,12 +30,14 @@ on:
       - 'ZZZZZ_DashboardKpiNavigationPatch.js'
       - 'ZZZZZZ_DashboardHashRoutingPatch.js'
       - 'ZZZZZZZ_DashboardMobileNavigationPatch.js'
+      - 'ZZZZZZZZ_DashboardDailyBriefingPatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
       - 'tests/dashboard-kpi-navigation.validation.js'
       - 'tests/dashboard-hash-routing.validation.js'
       - 'tests/dashboard-mobile-navigation.validation.js'
+      - 'tests/dashboard-daily-briefing.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   workflow_dispatch:
 
@@ -55,6 +59,7 @@ jobs:
           node --check ZZZZZ_DashboardKpiNavigationPatch.js
           node --check ZZZZZZ_DashboardHashRoutingPatch.js
           node --check ZZZZZZZ_DashboardMobileNavigationPatch.js
+          node --check ZZZZZZZZ_DashboardDailyBriefingPatch.js
 
       - name: Validate review-filter routing
         run: node tests/dashboard-review-routing.validation.js
@@ -73,3 +78,6 @@ jobs:
 
       - name: Validate mobile navigation
         run: node tests/dashboard-mobile-navigation.validation.js
+
+      - name: Validate daily executive briefing
+        run: node tests/dashboard-daily-briefing.validation.js
