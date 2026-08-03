@@ -1,0 +1,32 @@
+name: Governed Task Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZZZ_GovernedTaskAdapter.js'
+      - 'tests/governed-task-adapter.validation.js'
+      - '.github/workflows/governed-task-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZZZ_GovernedTaskAdapter.js'
+      - 'tests/governed-task-adapter.validation.js'
+      - '.github/workflows/governed-task-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-governed-task:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Validate adapter syntax
+        run: node --check ZZZZZZZZZZZZZZZZZ_GovernedTaskAdapter.js
+      - name: Validate governed task lifecycle
+        run: node tests/governed-task-adapter.validation.js
+      - name: Validate external-action inventory
+        run: node tests/external-action-boundary.validation.js
