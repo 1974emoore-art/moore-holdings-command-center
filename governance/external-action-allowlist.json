@@ -17,6 +17,11 @@
       "requiredControls": ["getGovernedActionExecutorRegistry_", "executeGovernedGmailMessage_", "GmailApp.search", "sentCopyVerified"],
       "rationale": "Governed Gmail send adapter executed only through the Release 1 approval lifecycle with sent-copy verification."
     },
+    "ZZZZZZZZZZZZZZZZ_GovernedDriveDocumentAdapter.js": {
+      "capabilities": ["DocumentApp.create", "DriveApp.createFile"],
+      "requiredControls": ["getGovernedActionExecutorRegistry_", "executeGovernedDriveDocument_", "DocumentApp.openById", "DriveApp.getFileById", "documentReadBackVerified", "pdfReadBackVerified"],
+      "rationale": "Governed Google Docs and optional PDF creation executed only through the Release 1 approval lifecycle with Drive read-back verification."
+    },
     "Airtable..js": {
       "capabilities": ["UrlFetchApp.fetch"],
       "requiredControls": [],
