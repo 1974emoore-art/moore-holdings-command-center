@@ -14,6 +14,7 @@ on:
       - 'ZZZZZZZZ_DashboardDailyBriefingPatch.js'
       - 'ZZZZZZZZZ_DashboardActivityRecoveryPatch.js'
       - 'ZZZZZZZZZZ_DashboardOperationsTimelinePatch.js'
+      - 'ZZZZZZZZZZZ_DashboardExecutiveWorkQueuePatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
@@ -23,6 +24,7 @@ on:
       - 'tests/dashboard-daily-briefing.validation.js'
       - 'tests/dashboard-activity-recovery.validation.js'
       - 'tests/dashboard-operations-timeline.validation.js'
+      - 'tests/dashboard-executive-work-queue.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   push:
     branches: [main]
@@ -37,6 +39,7 @@ on:
       - 'ZZZZZZZZ_DashboardDailyBriefingPatch.js'
       - 'ZZZZZZZZZ_DashboardActivityRecoveryPatch.js'
       - 'ZZZZZZZZZZ_DashboardOperationsTimelinePatch.js'
+      - 'ZZZZZZZZZZZ_DashboardExecutiveWorkQueuePatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
@@ -46,6 +49,7 @@ on:
       - 'tests/dashboard-daily-briefing.validation.js'
       - 'tests/dashboard-activity-recovery.validation.js'
       - 'tests/dashboard-operations-timeline.validation.js'
+      - 'tests/dashboard-executive-work-queue.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   workflow_dispatch:
 
@@ -70,6 +74,7 @@ jobs:
           node --check ZZZZZZZZ_DashboardDailyBriefingPatch.js
           node --check ZZZZZZZZZ_DashboardActivityRecoveryPatch.js
           node --check ZZZZZZZZZZ_DashboardOperationsTimelinePatch.js
+          node --check ZZZZZZZZZZZ_DashboardExecutiveWorkQueuePatch.js
 
       - name: Validate review-filter routing
         run: node tests/dashboard-review-routing.validation.js
@@ -97,3 +102,6 @@ jobs:
 
       - name: Validate executive operations timeline
         run: node tests/dashboard-operations-timeline.validation.js
+
+      - name: Validate Executive Work Queue
+        run: node tests/dashboard-executive-work-queue.validation.js
