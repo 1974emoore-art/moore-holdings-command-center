@@ -1,0 +1,30 @@
+name: Credit Lifecycle Model Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZZZZZ_CreditLifecycleModel.js'
+      - 'tests/credit-lifecycle-model.validation.js'
+      - '.github/workflows/credit-lifecycle-model-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZZZZZ_CreditLifecycleModel.js'
+      - 'tests/credit-lifecycle-model.validation.js'
+      - '.github/workflows/credit-lifecycle-model-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-credit-lifecycle-model:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Validate model syntax
+        run: node --check ZZZZZZZZZZZZZZZZZZZ_CreditLifecycleModel.js
+      - name: Validate lifecycle behavior
+        run: node tests/credit-lifecycle-model.validation.js
