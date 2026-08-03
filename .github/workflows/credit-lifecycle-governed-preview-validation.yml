@@ -1,0 +1,30 @@
+name: Credit Lifecycle Governed Preview Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'CreditLifecycleGovernedPreview.js'
+      - 'tests/credit-lifecycle-governed-preview.validation.js'
+      - '.github/workflows/credit-lifecycle-governed-preview-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'CreditLifecycleGovernedPreview.js'
+      - 'tests/credit-lifecycle-governed-preview.validation.js'
+      - '.github/workflows/credit-lifecycle-governed-preview-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-credit-lifecycle-governed-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Validate bridge syntax
+        run: node --check CreditLifecycleGovernedPreview.js
+      - name: Validate preview and approval boundaries
+        run: node tests/credit-lifecycle-governed-preview.validation.js
