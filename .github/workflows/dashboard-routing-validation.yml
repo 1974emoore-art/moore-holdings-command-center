@@ -6,14 +6,18 @@ on:
     paths:
       - 'Phase9_ExecutiveDashboard.html'
       - 'ZZ_DashboardRoutingPatch.js'
+      - 'ZZZ_DashboardNotificationsPatch.js'
       - 'tests/dashboard-review-routing.validation.js'
+      - 'tests/dashboard-notifications.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   push:
     branches: [main]
     paths:
       - 'Phase9_ExecutiveDashboard.html'
       - 'ZZ_DashboardRoutingPatch.js'
+      - 'ZZZ_DashboardNotificationsPatch.js'
       - 'tests/dashboard-review-routing.validation.js'
+      - 'tests/dashboard-notifications.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   workflow_dispatch:
 
@@ -28,7 +32,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate patch syntax
-        run: node --check ZZ_DashboardRoutingPatch.js
+        run: |
+          node --check ZZ_DashboardRoutingPatch.js
+          node --check ZZZ_DashboardNotificationsPatch.js
 
       - name: Validate review-filter routing
         run: node tests/dashboard-review-routing.validation.js
+
+      - name: Validate notifications
+        run: node tests/dashboard-notifications.validation.js
