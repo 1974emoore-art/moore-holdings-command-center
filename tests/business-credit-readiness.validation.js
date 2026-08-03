@@ -1,0 +1,12 @@
+'use strict';
+const fs=require('fs');const vm=require('vm');
+const source=fs.readFileSync('BusinessCreditReadinessEngine.js','utf8');
+['applicationSubmissionAllowed: false','executiveReviewRequired: true','governedExecutionRequired: true','COMPLETE_BUSINESS_FOUNDATION','ESTABLISH_DUNS','ADD_REPORTING_VENDORS','BUILD_REPORTING_TRADELINES','VERIFY_BUREAU_REPORTING','PREVIEW_FUNDING_APPLICATION_REVIEW_TASK'].forEach(x=>{if(!source.includes(x))throw new Error('Missing readiness control: '+x);});
+if(/approveGovernedAction\s*\(|executeApprovedGovernedAction\s*\(|UrlFetchApp\.|GmailApp\.|MailApp\./.test(source))throw new Error('Readiness engine must not execute applications or external actions.');
+const sandbox={};vm.createContext(sandbox);vm.runInContext(source,sandbox);
+const blocked=sandbox.buildBusinessCreditReadiness({foundation:{entityActive:true,einVerified:true},vendors:[],tradelines:[],bureaus:[],utilizationPercent:65});
+if(blocked.fundingReady||blocked.applicationSubmissionAllowed||blocked.blockers.length<4)throw new Error('Incomplete profile should be blocked.');
+const ready=sandbox.buildBusinessCreditReadiness({foundation:{entityActive:true,einVerified:true,businessAddressVerified:true,businessPhoneVerified:true,businessBankingActive:true,dunsEstablished:true},vendors:[1,2,3].map(()=>({reporting:true,status:'ACTIVE'})),tradelines:[1,2,3].map(()=>({reporting:true,status:'ACTIVE'})),bureaus:[{reportingDetected:true},{reportingDetected:true}],utilizationPercent:20,latePaymentsLast12Months:0,applications:[]});
+if(!ready.fundingReady||ready.readinessScore<80||ready.nextRecommendedAction!=='PREVIEW_FUNDING_APPLICATION_REVIEW_TASK')throw new Error('Ready profile calculation failed.');
+if(ready.applicationSubmissionAllowed)throw new Error('Engine must never submit applications directly.');
+console.log('Business Credit readiness validation passed.');
