@@ -1,0 +1,34 @@
+name: Dashboard Routing Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Phase9_ExecutiveDashboard.html'
+      - 'ZZ_DashboardRoutingPatch.js'
+      - 'tests/dashboard-review-routing.validation.js'
+      - '.github/workflows/dashboard-routing-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Phase9_ExecutiveDashboard.html'
+      - 'ZZ_DashboardRoutingPatch.js'
+      - 'tests/dashboard-review-routing.validation.js'
+      - '.github/workflows/dashboard-routing-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-dashboard-routing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate patch syntax
+        run: node --check ZZ_DashboardRoutingPatch.js
+
+      - name: Validate review-filter routing
+        run: node tests/dashboard-review-routing.validation.js
