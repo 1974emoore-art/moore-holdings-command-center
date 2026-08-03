@@ -1,0 +1,27 @@
+name: Personal Credit Physical Mail Lifecycle Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'PersonalCreditPhysicalMailLifecycle.js'
+      - 'tests/personal-credit-physical-mail-lifecycle.validation.js'
+      - '.github/workflows/personal-credit-physical-mail-lifecycle-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'PersonalCreditPhysicalMailLifecycle.js'
+      - 'tests/personal-credit-physical-mail-lifecycle.validation.js'
+      - '.github/workflows/personal-credit-physical-mail-lifecycle-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-physical-mail-lifecycle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check PersonalCreditPhysicalMailLifecycle.js
+      - run: node tests/personal-credit-physical-mail-lifecycle.validation.js
