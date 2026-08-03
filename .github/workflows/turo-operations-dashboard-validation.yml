@@ -1,0 +1,18 @@
+name: Turo Operations Dashboard Validation
+
+on:
+  pull_request:
+    paths:
+      - 'ZZZZZZZZZZZZZZZZZZZZ_TuroOperationsDashboardPatch.js'
+      - 'tests/turo-operations-dashboard.validation.js'
+      - '.github/workflows/turo-operations-dashboard-validation.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node tests/turo-operations-dashboard.validation.js
