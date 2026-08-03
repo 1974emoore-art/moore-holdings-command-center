@@ -1,0 +1,33 @@
+name: Credit Lifecycle Dashboard Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZ_CreditLifecycleDashboardPatch.js'
+      - 'ZZZZZZZZZZZZZZZZZZZ_CreditLifecycleModel.js'
+      - 'tests/credit-lifecycle-dashboard.validation.js'
+      - '.github/workflows/credit-lifecycle-dashboard-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZ_CreditLifecycleDashboardPatch.js'
+      - 'ZZZZZZZZZZZZZZZZZZZ_CreditLifecycleModel.js'
+      - 'tests/credit-lifecycle-dashboard.validation.js'
+      - '.github/workflows/credit-lifecycle-dashboard-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-credit-lifecycle-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate patch syntax
+        run: node --check ZZZZZZZZZZZZZ_CreditLifecycleDashboardPatch.js
+      - name: Validate lifecycle dashboard behavior
+        run: node tests/credit-lifecycle-dashboard.validation.js
+      - name: Validate lifecycle model
+        run: node tests/credit-lifecycle-model.validation.js
