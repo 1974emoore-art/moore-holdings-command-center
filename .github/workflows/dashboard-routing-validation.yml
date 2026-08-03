@@ -13,6 +13,7 @@ on:
       - 'ZZZZZZZ_DashboardMobileNavigationPatch.js'
       - 'ZZZZZZZZ_DashboardDailyBriefingPatch.js'
       - 'ZZZZZZZZZ_DashboardActivityRecoveryPatch.js'
+      - 'ZZZZZZZZZZ_DashboardOperationsTimelinePatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
@@ -21,6 +22,7 @@ on:
       - 'tests/dashboard-mobile-navigation.validation.js'
       - 'tests/dashboard-daily-briefing.validation.js'
       - 'tests/dashboard-activity-recovery.validation.js'
+      - 'tests/dashboard-operations-timeline.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   push:
     branches: [main]
@@ -34,6 +36,7 @@ on:
       - 'ZZZZZZZ_DashboardMobileNavigationPatch.js'
       - 'ZZZZZZZZ_DashboardDailyBriefingPatch.js'
       - 'ZZZZZZZZZ_DashboardActivityRecoveryPatch.js'
+      - 'ZZZZZZZZZZ_DashboardOperationsTimelinePatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
@@ -42,6 +45,7 @@ on:
       - 'tests/dashboard-mobile-navigation.validation.js'
       - 'tests/dashboard-daily-briefing.validation.js'
       - 'tests/dashboard-activity-recovery.validation.js'
+      - 'tests/dashboard-operations-timeline.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   workflow_dispatch:
 
@@ -65,6 +69,7 @@ jobs:
           node --check ZZZZZZZ_DashboardMobileNavigationPatch.js
           node --check ZZZZZZZZ_DashboardDailyBriefingPatch.js
           node --check ZZZZZZZZZ_DashboardActivityRecoveryPatch.js
+          node --check ZZZZZZZZZZ_DashboardOperationsTimelinePatch.js
 
       - name: Validate review-filter routing
         run: node tests/dashboard-review-routing.validation.js
@@ -89,3 +94,6 @@ jobs:
 
       - name: Validate activity and recovery center
         run: node tests/dashboard-activity-recovery.validation.js
+
+      - name: Validate executive operations timeline
+        run: node tests/dashboard-operations-timeline.validation.js
