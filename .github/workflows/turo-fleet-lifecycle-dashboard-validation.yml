@@ -1,0 +1,32 @@
+name: Turo Fleet Lifecycle Dashboard Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZZZ_TuroFleetLifecycleDashboardPatch.js'
+      - 'TuroVehicleLifecycle.js'
+      - 'tests/turo-fleet-lifecycle-dashboard.validation.js'
+      - 'tests/turo-vehicle-lifecycle.validation.js'
+      - '.github/workflows/turo-fleet-lifecycle-dashboard-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZZZ_TuroFleetLifecycleDashboardPatch.js'
+      - 'TuroVehicleLifecycle.js'
+      - 'tests/turo-fleet-lifecycle-dashboard.validation.js'
+      - 'tests/turo-vehicle-lifecycle.validation.js'
+      - '.github/workflows/turo-fleet-lifecycle-dashboard-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-turo-fleet-lifecycle-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check ZZZZZZZZZZZZZZZZZ_TuroFleetLifecycleDashboardPatch.js
+      - run: node tests/turo-fleet-lifecycle-dashboard.validation.js
+      - run: node tests/turo-vehicle-lifecycle.validation.js
