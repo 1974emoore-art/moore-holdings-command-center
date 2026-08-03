@@ -8,9 +8,11 @@ on:
       - 'ZZ_DashboardRoutingPatch.js'
       - 'ZZZ_DashboardNotificationsPatch.js'
       - 'ZZZZ_DashboardHealthDrilldownPatch.js'
+      - 'ZZZZZ_DashboardKpiNavigationPatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
+      - 'tests/dashboard-kpi-navigation.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   push:
     branches: [main]
@@ -19,9 +21,11 @@ on:
       - 'ZZ_DashboardRoutingPatch.js'
       - 'ZZZ_DashboardNotificationsPatch.js'
       - 'ZZZZ_DashboardHealthDrilldownPatch.js'
+      - 'ZZZZZ_DashboardKpiNavigationPatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
+      - 'tests/dashboard-kpi-navigation.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   workflow_dispatch:
 
@@ -40,6 +44,7 @@ jobs:
           node --check ZZ_DashboardRoutingPatch.js
           node --check ZZZ_DashboardNotificationsPatch.js
           node --check ZZZZ_DashboardHealthDrilldownPatch.js
+          node --check ZZZZZ_DashboardKpiNavigationPatch.js
 
       - name: Validate review-filter routing
         run: node tests/dashboard-review-routing.validation.js
@@ -49,3 +54,6 @@ jobs:
 
       - name: Validate System Health drill-down
         run: node tests/dashboard-health-drilldown.validation.js
+
+      - name: Validate KPI navigation
+        run: node tests/dashboard-kpi-navigation.validation.js
