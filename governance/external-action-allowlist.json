@@ -7,6 +7,11 @@
       "requiredControls": ["approveGovernedAction", "executeApprovedGovernedAction", "requireUnexpiredGovernedActionApproval_", "requireNoVerifiedIdempotencyDuplicate_"],
       "rationale": "Canonical governed Airtable adapter."
     },
+    "ZZZZZZZZZZZZZZ_GovernedCalendarAdapter.js": {
+      "capabilities": ["CalendarApp.createEvent"],
+      "requiredControls": ["getGovernedActionExecutorRegistry_", "executeGovernedCalendarEvent_", "calendar.getEventById", "readBackVerified"],
+      "rationale": "Governed Calendar event adapter executed only through the Release 1 approval lifecycle."
+    },
     "Airtable..js": {
       "capabilities": ["UrlFetchApp.fetch"],
       "requiredControls": [],
