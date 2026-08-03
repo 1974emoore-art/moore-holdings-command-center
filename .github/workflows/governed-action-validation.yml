@@ -5,13 +5,17 @@ on:
     branches: [main]
     paths:
       - 'GovernedActionEngine.js'
+      - 'GovernedActionRecovery.js'
       - 'tests/governed-action-engine.validation.js'
+      - 'tests/governed-action-recovery.validation.js'
       - '.github/workflows/governed-action-validation.yml'
   push:
     branches: [main]
     paths:
       - 'GovernedActionEngine.js'
+      - 'GovernedActionRecovery.js'
       - 'tests/governed-action-engine.validation.js'
+      - 'tests/governed-action-recovery.validation.js'
       - '.github/workflows/governed-action-validation.yml'
   workflow_dispatch:
 
@@ -26,7 +30,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate JavaScript syntax
-        run: node --check GovernedActionEngine.js
+        run: |
+          node --check GovernedActionEngine.js
+          node --check GovernedActionRecovery.js
 
       - name: Run governed-action regression controls
         run: node tests/governed-action-engine.validation.js
+
+      - name: Run governed-action recovery controls
+        run: node tests/governed-action-recovery.validation.js
