@@ -12,6 +12,7 @@ on:
       - 'ZZZZZZ_DashboardHashRoutingPatch.js'
       - 'ZZZZZZZ_DashboardMobileNavigationPatch.js'
       - 'ZZZZZZZZ_DashboardDailyBriefingPatch.js'
+      - 'ZZZZZZZZZ_DashboardActivityRecoveryPatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
@@ -19,6 +20,7 @@ on:
       - 'tests/dashboard-hash-routing.validation.js'
       - 'tests/dashboard-mobile-navigation.validation.js'
       - 'tests/dashboard-daily-briefing.validation.js'
+      - 'tests/dashboard-activity-recovery.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   push:
     branches: [main]
@@ -31,6 +33,7 @@ on:
       - 'ZZZZZZ_DashboardHashRoutingPatch.js'
       - 'ZZZZZZZ_DashboardMobileNavigationPatch.js'
       - 'ZZZZZZZZ_DashboardDailyBriefingPatch.js'
+      - 'ZZZZZZZZZ_DashboardActivityRecoveryPatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
@@ -38,6 +41,7 @@ on:
       - 'tests/dashboard-hash-routing.validation.js'
       - 'tests/dashboard-mobile-navigation.validation.js'
       - 'tests/dashboard-daily-briefing.validation.js'
+      - 'tests/dashboard-activity-recovery.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   workflow_dispatch:
 
@@ -60,6 +64,7 @@ jobs:
           node --check ZZZZZZ_DashboardHashRoutingPatch.js
           node --check ZZZZZZZ_DashboardMobileNavigationPatch.js
           node --check ZZZZZZZZ_DashboardDailyBriefingPatch.js
+          node --check ZZZZZZZZZ_DashboardActivityRecoveryPatch.js
 
       - name: Validate review-filter routing
         run: node tests/dashboard-review-routing.validation.js
@@ -81,3 +86,6 @@ jobs:
 
       - name: Validate daily executive briefing
         run: node tests/dashboard-daily-briefing.validation.js
+
+      - name: Validate activity and recovery center
+        run: node tests/dashboard-activity-recovery.validation.js
