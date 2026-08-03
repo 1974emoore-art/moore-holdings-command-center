@@ -1,0 +1,27 @@
+name: Business Credit Readiness Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'BusinessCreditReadinessEngine.js'
+      - 'tests/business-credit-readiness.validation.js'
+      - '.github/workflows/business-credit-readiness-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'BusinessCreditReadinessEngine.js'
+      - 'tests/business-credit-readiness.validation.js'
+      - '.github/workflows/business-credit-readiness-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-business-credit-readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check BusinessCreditReadinessEngine.js
+      - run: node tests/business-credit-readiness.validation.js
