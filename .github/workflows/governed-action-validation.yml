@@ -1,0 +1,32 @@
+name: Governed Action Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'GovernedActionEngine.js'
+      - 'tests/governed-action-engine.validation.js'
+      - '.github/workflows/governed-action-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'GovernedActionEngine.js'
+      - 'tests/governed-action-engine.validation.js'
+      - '.github/workflows/governed-action-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-governed-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate JavaScript syntax
+        run: node --check GovernedActionEngine.js
+
+      - name: Run governed-action regression controls
+        run: node tests/governed-action-engine.validation.js
