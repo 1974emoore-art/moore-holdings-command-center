@@ -1,0 +1,30 @@
+name: Personal Credit Mail Dashboard Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZ_PersonalCreditMailDashboardPatch.js'
+      - 'PersonalCreditPhysicalMailLifecycle.js'
+      - 'tests/personal-credit-mail-dashboard.validation.js'
+      - '.github/workflows/personal-credit-mail-dashboard-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZ_PersonalCreditMailDashboardPatch.js'
+      - 'PersonalCreditPhysicalMailLifecycle.js'
+      - 'tests/personal-credit-mail-dashboard.validation.js'
+      - '.github/workflows/personal-credit-mail-dashboard-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-personal-credit-mail-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check ZZZZZZZZZZZZZZZ_PersonalCreditMailDashboardPatch.js
+      - run: node tests/personal-credit-mail-dashboard.validation.js
+      - run: node tests/personal-credit-physical-mail-lifecycle.validation.js
