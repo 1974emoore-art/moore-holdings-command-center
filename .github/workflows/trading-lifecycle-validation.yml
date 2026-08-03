@@ -1,0 +1,22 @@
+name: Trading Lifecycle Validation
+
+on:
+  pull_request:
+    paths:
+      - 'apps-script/TradingLifecycle.js'
+      - 'tests/trading_lifecycle_validation.test.js'
+      - '.github/workflows/trading-lifecycle-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate governed Trading lifecycle
+        run: node tests/trading_lifecycle_validation.test.js
