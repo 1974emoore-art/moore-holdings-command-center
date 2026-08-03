@@ -1,0 +1,34 @@
+name: Governed Drive Document Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZZ_GovernedDriveDocumentAdapter.js'
+      - 'tests/governed-drive-document-adapter.validation.js'
+      - 'governance/external-action-allowlist.json'
+      - '.github/workflows/governed-drive-document-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZZ_GovernedDriveDocumentAdapter.js'
+      - 'tests/governed-drive-document-adapter.validation.js'
+      - 'governance/external-action-allowlist.json'
+      - '.github/workflows/governed-drive-document-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-governed-drive-document:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Validate adapter syntax
+        run: node --check ZZZZZZZZZZZZZZZZ_GovernedDriveDocumentAdapter.js
+      - name: Validate governed Drive document lifecycle
+        run: node tests/governed-drive-document-adapter.validation.js
+      - name: Validate external-action inventory
+        run: node tests/external-action-boundary.validation.js
