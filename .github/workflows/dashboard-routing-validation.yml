@@ -9,10 +9,12 @@ on:
       - 'ZZZ_DashboardNotificationsPatch.js'
       - 'ZZZZ_DashboardHealthDrilldownPatch.js'
       - 'ZZZZZ_DashboardKpiNavigationPatch.js'
+      - 'ZZZZZZ_DashboardHashRoutingPatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
       - 'tests/dashboard-kpi-navigation.validation.js'
+      - 'tests/dashboard-hash-routing.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   push:
     branches: [main]
@@ -22,10 +24,12 @@ on:
       - 'ZZZ_DashboardNotificationsPatch.js'
       - 'ZZZZ_DashboardHealthDrilldownPatch.js'
       - 'ZZZZZ_DashboardKpiNavigationPatch.js'
+      - 'ZZZZZZ_DashboardHashRoutingPatch.js'
       - 'tests/dashboard-review-routing.validation.js'
       - 'tests/dashboard-notifications.validation.js'
       - 'tests/dashboard-health-drilldown.validation.js'
       - 'tests/dashboard-kpi-navigation.validation.js'
+      - 'tests/dashboard-hash-routing.validation.js'
       - '.github/workflows/dashboard-routing-validation.yml'
   workflow_dispatch:
 
@@ -45,6 +49,7 @@ jobs:
           node --check ZZZ_DashboardNotificationsPatch.js
           node --check ZZZZ_DashboardHealthDrilldownPatch.js
           node --check ZZZZZ_DashboardKpiNavigationPatch.js
+          node --check ZZZZZZ_DashboardHashRoutingPatch.js
 
       - name: Validate review-filter routing
         run: node tests/dashboard-review-routing.validation.js
@@ -57,3 +62,6 @@ jobs:
 
       - name: Validate KPI navigation
         run: node tests/dashboard-kpi-navigation.validation.js
+
+      - name: Validate hash restoration
+        run: node tests/dashboard-hash-routing.validation.js
