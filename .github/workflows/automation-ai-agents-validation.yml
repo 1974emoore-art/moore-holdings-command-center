@@ -1,0 +1,19 @@
+name: Automation and AI Agents Validation
+
+on:
+  pull_request:
+    paths:
+      - 'src/automation_ai_agents.js'
+      - 'tests/automation_ai_agents.test.js'
+      - '.github/workflows/automation-ai-agents-validation.yml'
+
+jobs:
+  validate-automation-ai-agents:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run Automation and AI Agents lifecycle regression
+        run: node tests/automation_ai_agents.test.js
