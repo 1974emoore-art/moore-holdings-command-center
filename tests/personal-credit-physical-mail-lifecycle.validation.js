@@ -1,0 +1,15 @@
+'use strict';
+const fs=require('fs');const vm=require('vm');
+const source=fs.readFileSync('PersonalCreditPhysicalMailLifecycle.js','utf8');
+['mailboxOnlyWorkflow: true','physicalMailPerformedBySystem: false','physicalReceiptPerformedBySystem: false','HUMAN_HANDOFF_TO_USPS','MONITOR_USPS_TRACKING','PREVIEW_GOVERNED_FOLLOW_UP'].forEach(x=>{if(!source.includes(x))throw new Error('Missing control: '+x);});
+if(/MailApp\.|GmailApp\.|UrlFetchApp\.|approveGovernedAction\s*\(|executeApprovedGovernedAction\s*\(/.test(source))throw new Error('Physical mail lifecycle must not perform external actions.');
+let now=Date.parse('2026-08-03T18:00:00Z');
+const sandbox={Date:class extends Date{constructor(v){super(v===undefined?now:v)}static now(){return now;}static parse(v){return Date.parse(v);}}};vm.createContext(sandbox);vm.runInContext(source,sandbox);
+const prepared=sandbox.buildPersonalCreditPhysicalMailLifecycle({mailItemId:'m1',creditRecordId:'pc1',stage:'PRINT_READY'});
+if(prepared.nextAction!=='HUMAN_HANDOFF_TO_USPS'||!prepared.mailboxOnlyWorkflow)throw new Error('Print-ready boundary failed.');
+let failed=false;try{sandbox.buildPersonalCreditPhysicalMailLifecycle({stage:'DELIVERED'});}catch(e){failed=true;}if(!failed)throw new Error('Tracking should be required after handoff.');
+const delivered=sandbox.buildPersonalCreditPhysicalMailLifecycle({stage:'DELIVERED',trackingNumber:'9400 1000',deliveredAt:'2026-07-01T12:00:00Z',responseDays:30});
+if(!delivered.followUpRequired||delivered.nextAction!=='MONITOR_RESPONSE_DEADLINE')throw new Error('Response deadline calculation failed.');
+const response=sandbox.buildPersonalCreditPhysicalMailLifecycle({stage:'RESPONSE_RECEIVED',trackingNumber:'94001000',deliveredAt:'2026-07-01T12:00:00Z',responseReceivedAt:'2026-07-20T12:00:00Z'});
+if(response.nextAction!=='ATTACH_AND_REVIEW_RESPONSE')throw new Error('Response intake failed.');
+console.log('Personal Credit physical mail lifecycle validation passed.');
