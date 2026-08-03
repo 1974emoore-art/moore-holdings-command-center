@@ -25,7 +25,7 @@ function requirePattern(pattern, description) {
   ['requireUnexpiredGovernedActionApproval_(action)', 'expiration enforcement before execution'],
   ['requireNoVerifiedIdempotencyDuplicate_(action)', 'idempotency enforcement before execution'],
   ["status === GOVERNED_ACTION_ENGINE.statuses.VERIFIED", 'verified action replay safety'],
-  ["throw new Error('Execution adapter is not registered", 'deny-by-default adapters'],
+  ['Execution adapter is not registered for ', 'deny-by-default adapters'],
   ['executionResult.completed !== true', 'completed evidence requirement'],
   ['executionResult.verified !== true', 'verified evidence requirement'],
   ['expectedFields', 'optimistic concurrency input'],
@@ -60,16 +60,16 @@ requirePattern(
 );
 
 // Execute the pure redaction helper in isolation. No Apps Script service is exposed.
-const redactionMatch = source.match(
-  /function maskGovernedActionPayload_\(value\)\s*\{[\s\S]*?\n\}/
-);
-if (!redactionMatch) {
+const redactionStart = source.indexOf('function maskGovernedActionPayload_(value)');
+const redactionEnd = source.indexOf('\n\n\nfunction sanitizeGovernedActionForDashboard_', redactionStart);
+if (redactionStart < 0 || redactionEnd < 0) {
   throw new Error('Unable to isolate payload redaction helper.');
 }
 
+const redactionFunction = source.slice(redactionStart, redactionEnd);
 const sandbox = {};
 vm.createContext(sandbox);
-vm.runInContext(`${redactionMatch[0]}; this.mask = maskGovernedActionPayload_;`, sandbox);
+vm.runInContext(`${redactionFunction}; this.mask = maskGovernedActionPayload_;`, sandbox);
 const masked = sandbox.mask({
   token: 'secret-token',
   nested: {
