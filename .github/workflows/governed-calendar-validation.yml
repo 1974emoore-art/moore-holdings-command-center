@@ -1,0 +1,37 @@
+name: Governed Calendar Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZ_GovernedCalendarAdapter.js'
+      - 'tests/governed-calendar-adapter.validation.js'
+      - 'governance/external-action-allowlist.json'
+      - '.github/workflows/governed-calendar-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZ_GovernedCalendarAdapter.js'
+      - 'tests/governed-calendar-adapter.validation.js'
+      - 'governance/external-action-allowlist.json'
+      - '.github/workflows/governed-calendar-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-governed-calendar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate adapter syntax
+        run: node --check ZZZZZZZZZZZZZZ_GovernedCalendarAdapter.js
+
+      - name: Validate governed Calendar lifecycle
+        run: node tests/governed-calendar-adapter.validation.js
+
+      - name: Validate external-action inventory
+        run: node tests/external-action-boundary.validation.js
