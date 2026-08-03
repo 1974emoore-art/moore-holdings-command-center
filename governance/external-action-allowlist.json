@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "policy": "External write-capable source files must be explicitly inventoried and protected by independent approval or governed-action controls.",
+  "allowedFiles": {
+    "GovernedActionEngine.js": {
+      "capabilities": ["UrlFetchApp.fetch"],
+      "requiredControls": ["approveGovernedAction", "executeApprovedGovernedAction", "requireUnexpiredGovernedActionApproval_", "requireNoVerifiedIdempotencyDuplicate_"],
+      "rationale": "Canonical governed Airtable adapter."
+    },
+    "Airtable..js": {
+      "capabilities": ["UrlFetchApp.fetch"],
+      "requiredControls": [],
+      "rationale": "Legacy Airtable integration retained as an inventoried compatibility surface; new write paths are prohibited outside this manifest."
+    },
+    "Code.js": {
+      "capabilities": ["UrlFetchApp.fetch"],
+      "requiredControls": [],
+      "rationale": "Legacy Command Center integration retained as an inventoried compatibility surface."
+    },
+    "Phase7_ReviewWriter.gs.js": {
+      "capabilities": ["UrlFetchApp.fetch"],
+      "requiredControls": ["isPhase7WriteAuthorizationArmed_", "executeApprovedPhase7LiveRun", "clearPhase7WriteAuthorization_"],
+      "rationale": "Phase 7 writes require independent one-time authorization."
+    },
+    "Phase8_AIReviewLayer.js": {
+      "capabilities": ["UrlFetchApp.fetch"],
+      "requiredControls": ["PHASE8_TERMINAL_OVERRIDE_CODE", "terminalOverrideRequired"],
+      "rationale": "Phase 8 terminal transitions are independently protected."
+    },
+    "Phase10Final.js": {
+      "capabilities": ["DocumentApp.create"],
+      "requiredControls": ["PHASE10_PDF_AUTHORIZATION_TTL_MS", "armPhase10PdfAuthorization", "runPhase10ApprovedPdfProduction", "clearPhase10PdfAuthorization_"],
+      "rationale": "Phase 10 document production requires expiring one-time authorization."
+    },
+    "LetterProduction.js": {
+      "capabilities": ["DocumentApp.create"],
+      "requiredControls": [],
+      "rationale": "Legacy letter-production surface retained in the explicit inventory."
+    }
+  }
+}
