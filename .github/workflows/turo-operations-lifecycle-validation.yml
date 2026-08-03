@@ -1,0 +1,19 @@
+name: Turo Operations Lifecycle Validation
+
+on:
+  pull_request:
+    paths:
+      - 'TuroOperationsLifecycle.js'
+      - 'tests/turo-operations-lifecycle.validation.js'
+      - '.github/workflows/turo-operations-lifecycle-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-turo-operations-lifecycle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check TuroOperationsLifecycle.js
+      - run: node tests/turo-operations-lifecycle.validation.js
