@@ -1,0 +1,30 @@
+name: Business Credit Readiness Dashboard Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZZ_BusinessCreditReadinessDashboardPatch.js'
+      - 'BusinessCreditReadinessEngine.js'
+      - 'tests/business-credit-readiness-dashboard.validation.js'
+      - '.github/workflows/business-credit-readiness-dashboard-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZZ_BusinessCreditReadinessDashboardPatch.js'
+      - 'BusinessCreditReadinessEngine.js'
+      - 'tests/business-credit-readiness-dashboard.validation.js'
+      - '.github/workflows/business-credit-readiness-dashboard-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-business-credit-readiness-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check ZZZZZZZZZZZZZZZZ_BusinessCreditReadinessDashboardPatch.js
+      - run: node tests/business-credit-readiness-dashboard.validation.js
+      - run: node tests/business-credit-readiness.validation.js
