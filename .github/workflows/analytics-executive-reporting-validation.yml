@@ -1,0 +1,24 @@
+name: Analytics and Executive Reporting Validation
+
+on:
+  pull_request:
+    paths:
+      - 'apps-script/AnalyticsExecutiveReporting.gs'
+      - 'tests/analytics-executive-reporting.test.js'
+      - '.github/workflows/analytics-executive-reporting-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run analytics and executive reporting regression
+        run: node tests/analytics-executive-reporting.test.js
