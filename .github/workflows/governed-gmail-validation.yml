@@ -1,0 +1,34 @@
+name: Governed Gmail Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZ_GovernedGmailAdapter.js'
+      - 'tests/governed-gmail-adapter.validation.js'
+      - 'governance/external-action-allowlist.json'
+      - '.github/workflows/governed-gmail-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZZ_GovernedGmailAdapter.js'
+      - 'tests/governed-gmail-adapter.validation.js'
+      - 'governance/external-action-allowlist.json'
+      - '.github/workflows/governed-gmail-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-governed-gmail:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Validate adapter syntax
+        run: node --check ZZZZZZZZZZZZZZZ_GovernedGmailAdapter.js
+      - name: Validate governed Gmail lifecycle
+        run: node tests/governed-gmail-adapter.validation.js
+      - name: Validate external-action inventory
+        run: node tests/external-action-boundary.validation.js
