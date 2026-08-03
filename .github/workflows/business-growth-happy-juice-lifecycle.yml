@@ -1,0 +1,19 @@
+name: Business Growth and Happy Juice Lifecycle Validation
+
+on:
+  pull_request:
+    paths:
+      - 'apps-script/businessGrowthHappyJuiceLifecycle.js'
+      - 'tests/businessGrowthHappyJuiceLifecycle.test.js'
+      - '.github/workflows/business-growth-happy-juice-lifecycle.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate governed lifecycle
+        run: node tests/businessGrowthHappyJuiceLifecycle.test.js
