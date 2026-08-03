@@ -1,0 +1,36 @@
+name: Credit Lifecycle Dashboard Actions Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZ_CreditLifecycleDashboardActionsPatch.js'
+      - 'ZZZZZZZZZZZZZ_CreditLifecycleDashboardPatch.js'
+      - 'CreditLifecycleGovernedPreview.js'
+      - 'tests/credit-lifecycle-dashboard-actions.validation.js'
+      - '.github/workflows/credit-lifecycle-dashboard-actions-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ZZZZZZZZZZZZZZ_CreditLifecycleDashboardActionsPatch.js'
+      - 'ZZZZZZZZZZZZZ_CreditLifecycleDashboardPatch.js'
+      - 'CreditLifecycleGovernedPreview.js'
+      - 'tests/credit-lifecycle-dashboard-actions.validation.js'
+      - '.github/workflows/credit-lifecycle-dashboard-actions-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-credit-lifecycle-dashboard-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Validate patch syntax
+        run: node --check ZZZZZZZZZZZZZZ_CreditLifecycleDashboardActionsPatch.js
+      - name: Validate dashboard preview and queue controls
+        run: node tests/credit-lifecycle-dashboard-actions.validation.js
+      - name: Validate governed preview boundary
+        run: node tests/credit-lifecycle-governed-preview.validation.js
