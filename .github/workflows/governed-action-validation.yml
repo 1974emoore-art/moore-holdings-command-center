@@ -6,16 +6,20 @@ on:
     paths:
       - 'GovernedActionEngine.js'
       - 'GovernedActionRecovery.js'
+      - 'GovernedActionRollback.js'
       - 'tests/governed-action-engine.validation.js'
       - 'tests/governed-action-recovery.validation.js'
+      - 'tests/governed-action-rollback.validation.js'
       - '.github/workflows/governed-action-validation.yml'
   push:
     branches: [main]
     paths:
       - 'GovernedActionEngine.js'
       - 'GovernedActionRecovery.js'
+      - 'GovernedActionRollback.js'
       - 'tests/governed-action-engine.validation.js'
       - 'tests/governed-action-recovery.validation.js'
+      - 'tests/governed-action-rollback.validation.js'
       - '.github/workflows/governed-action-validation.yml'
   workflow_dispatch:
 
@@ -33,9 +37,13 @@ jobs:
         run: |
           node --check GovernedActionEngine.js
           node --check GovernedActionRecovery.js
+          node --check GovernedActionRollback.js
 
       - name: Run governed-action regression controls
         run: node tests/governed-action-engine.validation.js
 
       - name: Run governed-action recovery controls
         run: node tests/governed-action-recovery.validation.js
+
+      - name: Run governed-action rollback controls
+        run: node tests/governed-action-rollback.validation.js
